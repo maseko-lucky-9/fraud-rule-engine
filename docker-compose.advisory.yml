@@ -1,0 +1,45 @@
+name: fraud-rule-engine
+
+# Overlay: adds an Ollama service for AI-advisory commentary.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.advisory.yml \
+#                  --profile advisory up -d
+#
+# The model is pulled lazily on first /api/v1/decisions/{id}/advisory call.
+# Pre-pull explicitly to avoid the cold-call timeout:
+#   docker exec fraud-ollama ollama pull phi3:mini
+#
+# Bring-down NEVER touches the core stack; advisory is strictly opt-in.
+
+services:
+  ollama:
+    # Pinned for reproducibility. Bump in a dedicated commit if a feature
+    # we depend on requires a newer release; the eval rubric must rerun.
+    image: ollama/ollama:0.4.7
+    profiles: ["advisory"]
+    container_name: fraud-ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    profiles: ["", "advisory"]
+    environment:
+      SPRING_PROFILES_ACTIVE: advisory
+      APP_ADVISORY_ENABLED: "true"
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-phi3:mini}
+      OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-2000}
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  ollama_data:

@@ -1,0 +1,92 @@
+ruleSet:
+  id: default
+  version: 1
+  rules:
+
+    - id: BLACKLISTED_MERCHANT
+      priority: 1000
+      severity: CRITICAL
+      shortCircuit: true
+      condition:
+        predicate: merchantBlacklist
+        args:
+          in: ["MERCH-DENY-001", "MERCH-DENY-002"]
+      action:
+        flag: BLOCK
+        score: 1.0
+        reason: "Blacklisted merchant — operator override."
+
+    - id: VELOCITY_BURST
+      priority: 900
+      severity: HIGH
+      shortCircuit: true
+      condition:
+        predicate: velocity
+        args:
+          count: 5
+          windowSeconds: 60
+      action:
+        flag: BLOCK
+        score: 0.95
+        reason: "Card-testing pattern: >5 transactions in 60 seconds."
+
+    - id: HIGH_AMOUNT_NEW_ACCOUNT
+      priority: 800
+      severity: HIGH
+      shortCircuit: false
+      condition:
+        all:
+          - predicate: amountAbove
+            args: { value: 10000, currency: "ZAR" }
+          - predicate: accountAgeBelow
+            args: { days: 30 }
+      action:
+        flag: REVIEW
+        score: 0.85
+        reason: "High amount on a young account."
+
+    - id: NEW_DEVICE_HIGH_AMOUNT
+      priority: 700
+      severity: HIGH
+      shortCircuit: false
+      condition:
+        all:
+          - predicate: deviceFingerprintNew
+          - predicate: amountAbove
+            args: { value: 15000, currency: "ZAR" }
+      action:
+        flag: REVIEW
+        score: 0.75
+        reason: "Material transaction on a never-seen device for this account."
+
+    - id: CROSS_BORDER_HIGH_VALUE
+      priority: 600
+      severity: MEDIUM
+      shortCircuit: false
+      condition:
+        all:
+          - predicate: geoMismatch
+          - predicate: amountAbove
+            args: { value: 5000, currency: "ZAR" }
+      action:
+        flag: REVIEW
+        score: 0.70
+        reason: "Cross-border transaction (billing country differs from IP country) with material value."
+
+    - id: OFF_HOURS_LARGE_TX
+      priority: 500
+      severity: MEDIUM
+      shortCircuit: false
+      condition:
+        all:
+          - predicate: timeOfDay
+            args:
+              start: "02:00"
+              end: "05:00"
+              zone: "Africa/Johannesburg"
+          - predicate: amountAbove
+            args: { value: 7500, currency: "ZAR" }
+      action:
+        flag: REVIEW
+        score: 0.65
+        reason: "Large transaction during overnight low-activity window (02:00–05:00 SAST)."

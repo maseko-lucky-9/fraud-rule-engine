@@ -1,0 +1,66 @@
+# Hand-curated seeds fed to the Ollama scenario generator.
+#
+# Each seed describes a fraud archetype. At `sim seed`, the LLM expands every
+# seed into ~10 concrete variants (different amounts, accounts, sequences) and
+# writes them to scenarios/_generated/. Workers then replay them deterministically.
+#
+# `expected_outcome` is what the engine SHOULD return today, given its current
+# rule set. If a scenario whose expected_outcome is "miss" suddenly produces
+# a "detected" result, that means the engine has improved — re-baseline this file.
+
+version: 1
+
+seeds:
+  - id: card_testing_micro
+    archetype: card_testing
+    targets_rule: VELOCITY_BURST
+    description: |
+      Distributed micro-transactions ($0.99 - $5.00) across 20 accounts, each
+      account submitting 50 transactions over 60 seconds. VELOCITY_BURST is
+      per-account (>5 tx in 60 s), so 20 accounts × 50 attempts each evades
+      it. This is the canonical BIN-attack / card-validation pattern.
+    expected_outcome: miss
+    citations:
+      - https://www.chargeflow.io/chargebacks-101/card-testing
+      - https://www.inetco.com/resources/use-cases/defending-against-bin-attacks/
+
+  - id: structuring_sub_threshold
+    archetype: structuring
+    targets_rule: HIGH_AMOUNT_NEW_ACCOUNT
+    description: |
+      Single account submits $9,999 transactions every 90 minutes (timestamp
+      field). HIGH_AMOUNT_NEW_ACCOUNT triggers above $10,000 with
+      accountAgeDays < 30. Sub-threshold structuring evades the amount check
+      entirely. Classic AML evasion pattern.
+    expected_outcome: miss
+    citations:
+      - https://www.fraud.net/glossary/smurfing-structuring
+
+  - id: ato_geo_leap
+    archetype: account_takeover
+    targets_rule: CROSS_BORDER_HIGH_VALUE
+    description: |
+      Same accountId, country ZA at t=0 then US at t=+30min, new deviceId
+      after the geo shift. CROSS_BORDER_HIGH_VALUE catches if amount > $5k
+      but the engine has no time-distance impossibility rule, so the
+      <30-minute trans-continental leap goes unchallenged on its own.
+    expected_outcome: partial
+
+  - id: synthetic_identity_borderline
+    archetype: synthetic_identity
+    targets_rule: HIGH_AMOUNT_NEW_ACCOUNT
+    description: |
+      accountAgeDays = 31 (exactly one day past the 30-day cutoff) with
+      $50,000 transaction. Engine misses because the predicate is
+      `accountAgeBelow: 30`. One-off-by-one bypass of an explicit cutoff.
+    expected_outcome: miss
+
+  - id: device_entropy_farming
+    archetype: device_entropy
+    targets_rule: NEW_DEVICE_HIGH_AMOUNT
+    description: |
+      Single account uses 6 distinct deviceIds within 1 hour, each
+      transaction $14,999 (just below NEW_DEVICE_HIGH_AMOUNT's $15,000
+      threshold). No per-account device-velocity rule exists in v1, so the
+      pattern slips. Bot-driven account-farming signature.
+    expected_outcome: miss

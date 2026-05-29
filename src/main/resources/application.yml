@@ -1,0 +1,232 @@
+spring:
+  application:
+    name: fraud-rule-engine
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:fraud_engine}
+    username: ${POSTGRES_USER:fraud}
+    # Fail-fast: boot refuses to start with a dev-default secret.
+    # Set POSTGRES_PASSWORD in env (.env locally, GitHub Actions secret for CI).
+    password: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var must be set}
+    hikari:
+      # Sized for the 200 rps target with a 30% safety margin. Postgres
+      # max_connections set to 300 in docker-compose so 50-conn pool
+      # * N replicas cannot exhaust the server.
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 5000
+      # Surfaces "connection-leak" warnings in the log if a request holds
+      # a connection past 60s — a strong signal of an un-closed
+      # @Transactional boundary or a runaway predicate.
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+        # READ_COMMITTED is Postgres' default but pinning it here makes
+        # the contract explicit and prevents a future containerised
+        # Postgres image with a non-default setting from surfacing race
+        # conditions in production. Spec value 2 = READ_COMMITTED.
+        connection:
+          isolation: 2
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: fraud-engine
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.capitec.fraud.*
+        spring.json.value.default.type: com.capitec.fraud.ingest.TransactionEvent
+        spring.json.use.type.headers: false
+        # Only read records from committed transactions on the broker.
+        # Without this the consumer can observe rows from in-flight tx that
+        # the broker may later abort, causing phantom decisions on outage.
+        isolation.level: read_committed
+        # Micro-batching: don't wake the consumer on every byte. 64 KiB
+        # or 50ms (whichever first) groups small messages into larger
+        # fetches, which raises throughput under load with minimal
+        # latency impact (50ms is well below the 200ms p99 SLO).
+        fetch.min.bytes: 65536
+        fetch.max.wait.ms: 50
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+    listener:
+      ack-mode: manual_immediate
+
+server:
+  port: ${API_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  # Bind actuator to a separate port so operator/scrape traffic can be
+  # firewalled / network-policied independently of the public API. The
+  # API_PORT (default 8080) is the only one exposed to public ingress;
+  # 8081 lives on the internal scrape network. Kubernetes probe paths
+  # /actuator/health/{liveness,readiness} therefore target :8081.
+  server:
+    port: ${MANAGEMENT_PORT:8081}
+    address: 0.0.0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,redis
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    doc-expansion: none
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    root: INFO
+    com.capitec.fraud: DEBUG
+    org.springframework.kafka: WARN
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [corrId=%X{correlationId:-}] - %msg%n'
+
+app:
+  rules:
+    path: classpath:rules/rule-set-v1.yml
+    reload:
+      enabled: true
+  engine:
+    # Hard cap on RuleEngine.evaluate() wait. A pathological predicate
+    # (catastrophic regex backtracking, stuck Redis Lua call) is propagated
+    # as a 503 by ProblemDetailExceptionHandler rather than silently
+    # APPROVing the transaction. Test profile overrides to 5000ms to absorb
+    # cold-JVM flakiness in CI.
+    eval-timeout-ms: ${ENGINE_EVAL_TIMEOUT_MS:200}
+    eval-pool-size: ${ENGINE_EVAL_POOL_SIZE:50}
+  outbox:
+    poll-interval-ms: ${OUTBOX_POLL_MS:500}
+    batch-size: ${OUTBOX_BATCH:100}
+    publish-timeout-ms: ${OUTBOX_PUBLISH_TIMEOUT_MS:5000}
+    # Once a row has failed this many publish attempts it is routed to
+    # outbox_dlt with the last error message. Without a cap, poison-pill
+    # payloads loop forever and drown the metrics signal.
+    max-retries: ${OUTBOX_MAX_RETRIES:10}
+  idempotency:
+    ttl-hours: ${IDEMPOTENCY_TTL_HOURS:24}
+  audit:
+    # Cadence + batch for the durable retry poller that drains
+    # audit_pending back into audit_log under ON CONFLICT DO NOTHING.
+    retry-interval-ms: ${AUDIT_RETRY_INTERVAL_MS:2000}
+    retry-batch-size: ${AUDIT_RETRY_BATCH_SIZE:50}
+    # Max promotion attempts per pending row before it's abandoned (and
+    # the give-up counter ticks the alarm). 20 attempts × 2s = ~40s of
+    # downstream-DB unavailability tolerance before audit-loss surfaces.
+    retry-max-attempts: ${AUDIT_RETRY_MAX_ATTEMPTS:20}
+  rate-limit:
+    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:100}
+  security:
+    jwt:
+      # Fail-fast on missing secret. The dev default was searchable in the
+      # compiled JAR and constituted a heap-dump leak vector; ADR-0007 was
+      # updated to require explicit env injection.
+      secret: ${JWT_HS256_SECRET:?JWT_HS256_SECRET env var must be set (>=32 bytes)}
+      issuer: fraud-rule-engine
+      ttl-seconds: 3600
+    api-key: ${SERVICE_API_KEY:?SERVICE_API_KEY env var must be set (>=32 chars)}
+  advisory:
+    enabled: false
+    ollama:
+      base-url: ${OLLAMA_HOST:http://localhost:11434}
+      model: ${OLLAMA_MODEL:phi3:mini}
+      timeout-ms: ${OLLAMA_TIMEOUT_MS:2000}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      database:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+      advisory:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+      redis-state:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        slow-call-duration-threshold: 1s
+  retry:
+    instances:
+      kafka-publish:
+        max-attempts: 3
+        wait-duration: 200ms
+        exponential-backoff-multiplier: 2
+  bulkhead:
+    instances:
+      # Single in-flight drain per replica so overlapping scheduler ticks
+      # cannot race themselves into double work. Fast 0ms wait — if a
+      # tick collides with an in-flight drain the caller drops out and
+      # the next tick (already queued by @Scheduled) covers it.
+      outbox-poller:
+        max-concurrent-calls: 1
+        max-wait-duration: 0
+      # Same shape for the audit-pending retry drain.
+      audit-retry:
+        max-concurrent-calls: 1
+        max-wait-duration: 0
+
+---
+spring:
+  config:
+    activate:
+      on-profile: redis-state
+# When this profile is active the RedisStateStore @Primary bean wins over
+# InMemoryStateStore. Day-3 docker-compose stack runs this profile so the
+# velocity/device predicates are cluster-coherent.
+
+---
+spring:
+  config:
+    activate:
+      on-profile: advisory
+app:
+  advisory:
+    enabled: true

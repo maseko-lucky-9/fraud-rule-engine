@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fraud-engine.example/fraud/rule-set.schema.json",
+  "title": "Fraud RuleSet",
+  "type": "object",
+  "required": ["ruleSet"],
+  "additionalProperties": false,
+  "properties": {
+    "ruleSet": {
+      "type": "object",
+      "required": ["id", "version", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "id":      { "type": "string", "minLength": 1 },
+        "version": { "type": "integer", "minimum": 1 },
+        "rules":   { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rule" } }
+      }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "priority", "condition", "action"],
+      "additionalProperties": false,
+      "properties": {
+        "id":           { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "priority":     { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "severity":     { "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "shortCircuit": { "type": "boolean", "default": false },
+        "condition":    { "$ref": "#/$defs/condition" },
+        "action":       { "$ref": "#/$defs/action" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["flag", "score", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "flag":   { "enum": ["APPROVE", "REVIEW", "BLOCK"] },
+        "score":  { "type": "number", "minimum": 0, "maximum": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": ["predicate"],
+          "additionalProperties": false,
+          "properties": {
+            "predicate": { "type": "string", "minLength": 1 },
+            "args":      { "type": "object" }
+          }
+        },
+        {
+          "required": ["all"],
+          "additionalProperties": false,
+          "properties": {
+            "all": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/condition" } }
+          }
+        },
+        {
+          "required": ["any"],
+          "additionalProperties": false,
+          "properties": {
+            "any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/condition" } }
+          }
+        }
+      ]
+    }
+  }
+}

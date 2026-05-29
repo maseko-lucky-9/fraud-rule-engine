@@ -1,0 +1,102 @@
+name: fraud-rule-engine
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fraud-postgres
+    # Raise the connection ceiling so the Hikari pool (50 conns per replica
+    # plus management overhead) cannot exhaust the server on a multi-replica
+    # deploy. Default Postgres ships with 100.
+    command: ["postgres", "-c", "max_connections=300"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fraud}
+      # No fallback — the engine fails-fast if this is empty. Set in .env.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_engine}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraud} -d ${POSTGRES_DB:-fraud_engine}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fraud-redis
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.1.1
+    container_name: fraud-redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr=internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr=internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr=internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --smp=1
+      - --memory=1G
+      - --mode=dev-container
+      - --default-log-level=warn
+    ports:
+      - "127.0.0.1:${REDPANDA_PORT:-19092}:19092"
+      - "127.0.0.1:${REDPANDA_ADMIN_PORT:-9644}:9644"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fraud-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${APP_PROFILE:-redis-state}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_engine}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP: redpanda:9092
+      JWT_HS256_SECRET: ${JWT_HS256_SECRET:?JWT_HS256_SECRET must be set in .env (>=32 bytes)}
+      SERVICE_API_KEY: ${SERVICE_API_KEY:?SERVICE_API_KEY must be set in .env (>=32 chars)}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+      # Management port for actuator (health/info/prometheus/metrics).
+      # Kept on loopback so dev probes work without exposing scrape to
+      # the host network unnecessarily.
+      - "127.0.0.1:${MANAGEMENT_PORT:-8081}:8081"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  redpanda_data:

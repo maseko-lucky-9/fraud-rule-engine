@@ -1,0 +1,17 @@
+{
+  "comment": "Engine-supported predicate names. Source: src/main/java/com/capitec/fraud/engine/predicates/. Audit YAML rule stubs referencing predicates outside this list are downgraded to 'suggested mitigation (requires new predicate)'.",
+  "predicates": [
+    "merchantBlacklist",
+    "velocity",
+    "amountAbove",
+    "accountAgeBelow",
+    "deviceFingerprintNew",
+    "geoMismatch",
+    "timeOfDay",
+    "currencyMismatch"
+  ],
+  "combinators": [
+    "all",
+    "any"
+  ]
+}

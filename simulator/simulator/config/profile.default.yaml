@@ -1,0 +1,76 @@
+# Default simulation profile.
+#
+# Targets ~10 000 transactions across 100 deterministic accounts in ~10 minutes
+# of wall-clock, mixing benign and adversarial traffic. Adjust via CLI flags
+# (--accounts, --duration, --seed, --no-llm) or by copying this file.
+
+profile_name: default
+
+engine:
+  rest_base_url: http://localhost:8090
+  kafka_bootstrap: localhost:9092
+  jwt_token_endpoint: /auth/token
+  transactions_endpoint: /api/v1/transactions
+  decisions_endpoint: /api/v1/decisions
+  admin_audit_endpoint: /admin/audit
+  prometheus_endpoint: /actuator/prometheus
+  rate_limit_per_subject_per_min: 100
+
+# Loaded from the engine's .env at runtime; these keys are looked up here.
+# Sensitive values NEVER live in this file.
+secrets:
+  jwt_secret_env: JWT_HS256_SECRET
+  service_api_key_env: SERVICE_API_KEY
+  postgres_url_env: POSTGRES_URL
+  postgres_user_env: POSTGRES_USER
+  postgres_password_env: POSTGRES_PASSWORD
+
+run:
+  total_tx_target: 10000
+  duration_seconds: 600
+  seed: 42
+  transport_mix:
+    rest: 0.80
+    kafka: 0.20
+
+accounts:
+  count: 100
+  account_age_buckets:
+    new: 0.25       # 0-10 days
+    young: 0.20     # 11-30 days
+    aged: 0.35      # 31-365 days
+    veteran: 0.20   # > 365 days
+  primary_country: ZA
+  cross_border_share: 0.10   # share of accounts whose ipCountry differs from country
+  channels: [WEB, MOBILE, POS, ATM, API]
+
+agents:
+  honest_count: 85
+  scripted_adversary_count: 10
+  llm_adversary_count: 5
+  llm_concurrency_cap: 10
+
+ollama:
+  enabled: true
+  base_url: http://localhost:11434
+  model: llama3.1:8b
+  temperature: 0
+  request_timeout_seconds: 30
+  retries: 2
+
+scenarios:
+  rule_coverage: true
+  evasion: true
+  security: true
+  load:
+    enabled: true
+    target_rps: 150
+    duration_seconds: 60
+    k6_script_path: ../k6/load.js   # reuses engine's existing k6 script
+    k6_image: grafana/k6:latest
+
+output:
+  reports_root: reports
+  sink_db_filename: sink.db
+  decisions_parquet_filename: raw_decisions.parquet
+  audit_report_filename: audit_report.md

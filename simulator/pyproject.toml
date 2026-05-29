@@ -1,0 +1,67 @@
+[project]
+name = "fraud-rule-engine-simulator"
+version = "0.1.0"
+description = "Distributed multi-agent simulation and pen-test harness for the fraud-rule-engine"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Lucky Maseko" }]
+readme = "README.md"
+
+dependencies = [
+    "httpx>=0.27",
+    "aiokafka>=0.11",
+    "ollama>=0.4",
+    "pydantic>=2.8",
+    "pandas>=2.2",
+    "pyarrow>=17.0",
+    "matplotlib>=3.9",
+    "jinja2>=3.1",
+    "psycopg[binary]>=3.2",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "rich>=13.7",
+    "pyjwt>=2.9",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+sim = "simulator.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Standard nested-package layout: simulator/ (this pyproject's dir) contains
+# the simulator/ Python package — that's what hatchling finds via the
+# default `packages` search.
+[tool.hatch.build.targets.wheel]
+packages = ["simulator"]
+
+[tool.ruff]
+line-length = 110  # JSON literal mock bodies in tests routinely brush 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S"]
+ignore = ["S101"]  # asserts are fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S"]
+# Security probes intentionally embed forged JWT payloads as constants.
+"scenarios/security.py" = ["S105", "E501"]
+"**/scenarios/security.py" = ["S105", "E501"]
+# Typer CLI uses typer.Option / typer.Argument as default values by design.
+"**/cli.py" = ["B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-q --no-header"
+testpaths = ["tests"]

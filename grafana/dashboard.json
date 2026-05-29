@@ -1,0 +1,100 @@
+{
+  "title": "Fraud Rule Engine — SLO Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["fraud-engine", "slo", "fraud-engine"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Ingest request rate (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/api/v1/transactions\",method=\"POST\"}[1m]))",
+          "legendFormat": "ingest"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Ingest latency p50 / p95 / p99",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{uri=\"/api/v1/transactions\",method=\"POST\"}[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{uri=\"/api/v1/transactions\",method=\"POST\"}[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{uri=\"/api/v1/transactions\",method=\"POST\"}[5m])))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Outbox pending oldest (seconds)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "outbox_pending_oldest_seconds", "legendFormat": "oldest" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Outbox DLT routed (rate)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "rate(outbox_dlt_total[5m])", "legendFormat": "dlt/s" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Audit failures vs pending-promoted vs give-up",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "rate(audit_write_failed_total[5m])", "legendFormat": "failed" },
+        { "expr": "rate(audit_write_pending_persisted_total[5m])", "legendFormat": "pending-persisted" },
+        { "expr": "rate(audit_pending_promoted_total[5m])", "legendFormat": "promoted" },
+        { "expr": "rate(audit_pending_give_up_total[5m])", "legendFormat": "give-up" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Audit pending queue depth",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "audit_pending_size", "legendFormat": "audit_pending" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Circuit-breaker state (1 = open)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "resilience4j_circuitbreaker_state{state=\"open\"}", "legendFormat": "{{ name }}" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Rate-limit rejections + rule-eval timeouts",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        { "expr": "rate(rate_limit_exceeded_total[5m])", "legendFormat": "rate-limit 429/s" },
+        { "expr": "rate(rule_eval_timeout_total[5m])", "legendFormat": "eval timeout/s" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Project-specific ###
+.env
+.envrc
+.DS_Store
+*.log
+evidence/
+postgres_data/
+redis_data/
+redpanda_data/
+dist/
+
+### Tooling artefacts (not part of the submission) ###
+ruvector.db
+graphify-out/
+agentdb.rvf
+agentdb.rvf.lock
+*.rvf
+*.rvf.lock
+
+
+### Python simulator artefacts ###
+simulator/.venv/
+simulator/__pycache__/
+simulator/**/__pycache__/
+simulator/**/*.pyc
+.ruff_cache/
+
+### Claude / agentic scratch ###
+.claude/

@@ -1,0 +1,74 @@
+{
+  "cases": [
+    {
+      "name": "HIGH_AMOUNT_NEW_ACCOUNT: match",
+      "input": {"txId":"00000001-0000-0000-0000-000000000000","accountId":"GOLDEN-1","amount":12500,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"d1","accountAgeDays":12,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"REVIEW","score":0.85,"matchedRuleIds":["HIGH_AMOUNT_NEW_ACCOUNT"]}
+    },
+    {
+      "name": "HIGH_AMOUNT_NEW_ACCOUNT: no-match (account old enough)",
+      "input": {"txId":"00000002-0000-0000-0000-000000000000","accountId":"GOLDEN-2","amount":12500,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"d2","accountAgeDays":365,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    },
+    {
+      "name": "VELOCITY_BURST: no-match on first 5 tx",
+      "input": {"txId":"00000003-0000-0000-0000-000000000000","accountId":"GOLDEN-V-A","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d3","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    },
+    {
+      "name": "VELOCITY_BURST: match on 6th tx in same window (short-circuit)",
+      "preLoad": [
+        {"txId":"00000003-0000-0000-0000-000000000001","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:01Z"},
+        {"txId":"00000003-0000-0000-0000-000000000002","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:02Z"},
+        {"txId":"00000003-0000-0000-0000-000000000003","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:03Z"},
+        {"txId":"00000003-0000-0000-0000-000000000004","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:04Z"},
+        {"txId":"00000003-0000-0000-0000-000000000005","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:05Z"}
+      ],
+      "input": {"txId":"00000003-0000-0000-0000-000000000006","accountId":"GOLDEN-V-B","amount":50,"currency":"ZAR","mcc":"5411","channel":"POS","country":"ZA","ipCountry":"ZA","deviceId":"d4","accountAgeDays":300,"timestamp":"2026-05-19T12:00:06Z"},
+      "expected": {"status":"BLOCK","score":0.95,"matchedRuleIds":["VELOCITY_BURST"]}
+    },
+    {
+      "name": "CROSS_BORDER_HIGH_VALUE: match (ZA vs NG, R6000)",
+      "input": {"txId":"00000004-0000-0000-0000-000000000000","accountId":"GOLDEN-3","amount":6000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"NG","deviceId":"d5","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"REVIEW","score":0.70,"matchedRuleIds":["CROSS_BORDER_HIGH_VALUE"]}
+    },
+    {
+      "name": "CROSS_BORDER_HIGH_VALUE: no-match (same country)",
+      "input": {"txId":"00000005-0000-0000-0000-000000000000","accountId":"GOLDEN-4","amount":6000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"d6","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    },
+    {
+      "name": "BLACKLISTED_MERCHANT: match (short-circuits — no NEW_DEVICE)",
+      "input": {"txId":"00000006-0000-0000-0000-000000000000","accountId":"GOLDEN-5","amount":50000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"NG","deviceId":"never-seen-g5","merchantId":"MERCH-DENY-001","accountAgeDays":5,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"BLOCK","score":1.0,"matchedRuleIds":["BLACKLISTED_MERCHANT"]}
+    },
+    {
+      "name": "BLACKLISTED_MERCHANT: no-match (different merchant)",
+      "input": {"txId":"00000007-0000-0000-0000-000000000000","accountId":"GOLDEN-6","amount":50,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"d7","merchantId":"MERCH-OK","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    },
+    {
+      "name": "OFF_HOURS_LARGE_TX: match (03:00 SAST = 01:00 UTC, R8000)",
+      "input": {"txId":"00000008-0000-0000-0000-000000000000","accountId":"GOLDEN-7","amount":8000,"currency":"ZAR","mcc":"5411","channel":"MOBILE","country":"ZA","ipCountry":"ZA","deviceId":"d8","accountAgeDays":300,"timestamp":"2026-05-19T01:00:00Z"},
+      "expected": {"status":"REVIEW","score":0.65,"matchedRuleIds":["OFF_HOURS_LARGE_TX"]}
+    },
+    {
+      "name": "OFF_HOURS_LARGE_TX: no-match (midday)",
+      "input": {"txId":"00000009-0000-0000-0000-000000000000","accountId":"GOLDEN-8","amount":8000,"currency":"ZAR","mcc":"5411","channel":"MOBILE","country":"ZA","ipCountry":"ZA","deviceId":"d9","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    },
+    {
+      "name": "NEW_DEVICE_HIGH_AMOUNT: match (also fires HIGH_AMOUNT_NEW_ACCOUNT, no short-circuit)",
+      "input": {"txId":"0000000a-0000-0000-0000-000000000000","accountId":"GOLDEN-9","amount":16000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"never-seen-9","accountAgeDays":15,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"REVIEW","score":0.85,"matchedRuleIds":["HIGH_AMOUNT_NEW_ACCOUNT","NEW_DEVICE_HIGH_AMOUNT"]}
+    },
+    {
+      "name": "NEW_DEVICE_HIGH_AMOUNT: no-match on second use of same device",
+      "preLoad": [
+        {"txId":"0000000b-0000-0000-0000-000000000001","accountId":"GOLDEN-10","amount":16000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"reused-device","accountAgeDays":300,"timestamp":"2026-05-19T11:59:00Z"}
+      ],
+      "input": {"txId":"0000000b-0000-0000-0000-000000000002","accountId":"GOLDEN-10","amount":16000,"currency":"ZAR","mcc":"5411","channel":"WEB","country":"ZA","ipCountry":"ZA","deviceId":"reused-device","accountAgeDays":300,"timestamp":"2026-05-19T12:00:00Z"},
+      "expected": {"status":"APPROVE","score":0.0,"matchedRuleIds":[]}
+    }
+  ]
+}

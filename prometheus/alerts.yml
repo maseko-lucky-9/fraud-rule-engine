@@ -1,0 +1,81 @@
+groups:
+  - name: fraud-engine-slos
+    interval: 30s
+    rules:
+      # SLO 1: ingest p99 < 200ms over a 5-minute window.
+      # If we breach for 2 consecutive evaluations the page fires.
+      - alert: IngestP99HighLatency
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le) (
+              rate(http_server_requests_seconds_bucket{uri="/api/v1/transactions",method="POST"}[5m])
+            )
+          ) > 0.2
+        for: 2m
+        labels:
+          severity: page
+          slo: ingest-latency
+        annotations:
+          summary: "Ingest p99 latency > 200ms over 5m"
+          runbook: "docs/runbooks/rule-misfire.md"
+
+      # SLO 2: outbox is being drained — oldest pending row < 30s.
+      # A breach means the poller is jammed or the broker is unreachable.
+      - alert: OutboxBacklogStale
+        expr: outbox_pending_oldest_seconds > 30
+        for: 1m
+        labels:
+          severity: page
+          slo: outbox-drain
+        annotations:
+          summary: "Outbox oldest pending row > 30s old"
+          runbook: "docs/runbooks/kafka-lag.md"
+
+      # SLO 3: audit-log writes never silently drop.
+      # Even ONE failure in the live path is a signal worth investigating —
+      # the audit_pending fallback covers correctness but persistent
+      # failures point at a deeper issue.
+      - alert: AuditWriteFailures
+        expr: increase(audit_write_failed_total[5m]) > 0
+        for: 0s
+        labels:
+          severity: warn
+          slo: audit-durability
+        annotations:
+          summary: "Audit writes failing — falling back to audit_pending"
+          runbook: "docs/runbooks/audit-backlog.md"
+
+      # SLO 4: audit_pending should drain fast — a growing queue means the
+      # retry poller isn't catching up.
+      - alert: AuditPendingGrowing
+        expr: audit_pending_size > 100
+        for: 5m
+        labels:
+          severity: page
+          slo: audit-durability
+        annotations:
+          summary: "audit_pending queue depth > 100 for 5m"
+          runbook: "docs/runbooks/audit-backlog.md"
+
+      # SLO 5: any circuit-breaker open is at minimum a degraded service.
+      - alert: CircuitBreakerOpen
+        expr: resilience4j_circuitbreaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: page
+          slo: resilience
+        annotations:
+          summary: "{{ $labels.name }} circuit breaker open for > 1m"
+          runbook: "docs/runbooks/db-down.md"
+
+      # SLO 6: outbox_dlt rows are a sign of payload contract drift.
+      - alert: OutboxDltRouting
+        expr: increase(outbox_dlt_total[5m]) > 0
+        for: 0s
+        labels:
+          severity: warn
+          slo: outbox-correctness
+        annotations:
+          summary: "Outbox rows routed to outbox_dlt — payload contract may be drifting"
+          runbook: "docs/runbooks/bad-payload.md"
