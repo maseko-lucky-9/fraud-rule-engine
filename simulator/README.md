@@ -99,8 +99,3 @@ simulator/
 └── tests/                  # pytest, --no-llm safe
 ```
 
-## Plan
-
-The full design lives at
-`~/.claude/plans/create-a-simulation-application-distributed-moore.md`.
-An ADR will land under `../docs/decisions/` once the simulator stabilises.
