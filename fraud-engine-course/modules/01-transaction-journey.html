@@ -1,0 +1,384 @@
+<section class="module" id="module-1" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">The Journey of a Transaction</h1>
+      <p class="module-subtitle">From a tap on a card to a verdict in milliseconds — the exact path your payment takes through a fraud engine.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- SCREEN 1: The hook + what the app is -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What is this thing?</h2>
+        <p>This whole course is about one program: a real-time brain that scores bank card payments and instantly says <strong>ALLOW</strong>, <strong>REVIEW</strong>, or <strong>BLOCK</strong> — always with a plain-English reason attached.</p>
+        <p>Picture it as an <strong>airport security lane</strong>. You show a boarding pass, your bag gets a tag, it goes through the X-ray against a checklist of red flags, and you get a green, amber, or red light. That is exactly what a fraud engine does to every payment.</p>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">✈️</div>
+          <div class="callout-content">
+            <strong class="callout-title">The scenario we will trace</strong>
+            <p>Someone taps a card for <strong>R12,500</strong> on an account that is only <strong>12 days old</strong>. In the few milliseconds before the bank says "hold on — let a human look at this," here is the exact journey that payment takes.</p>
+          </div>
+        </div>
+
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">📥</div>
+            <div>
+              <strong>Goes IN</strong>
+              <p>A small bundle of facts about one payment, written as <span class="term" data-definition="JSON is a simple text format for sending structured data between programs — a list of labelled values like amount: 12500, currency: ZAR. It is the universal language apps use to talk to each other.">JSON</span> (amount, account, country, account age...).</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-5)">📤</div>
+            <div>
+              <strong>Comes OUT</strong>
+              <p>A <span class="term" data-definition="The final answer the fraud engine gives: ALLOW (let it through), REVIEW (pause for a human), or BLOCK (stop it). It always comes with a reason.">verdict</span> — ALLOW / REVIEW / BLOCK — plus a 0-to-1 risk score and a human-readable reason.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: The data flow animation (HERO) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The journey, step by step</h2>
+        <p>Eight stops, all inside one program. Each stop is a "character" you will meet properly in the next module — here we just watch the payment travel through them. Press <strong>Next Step</strong> to follow our R12,500 payment.</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"actor-1","label":"1. Client App asks Front Desk for a login pass at /auth/token and gets back a JWT token"},
+          {"highlight":"actor-2","label":"2. Client POSTs the transaction JSON to /api/v1/transactions with the token plus an Idempotency-Key","packet":true,"from":"actor-1","to":"actor-2"},
+          {"highlight":"actor-3","label":"3. Bouncer checks the token is valid and the JSON matches the template. Bad input is rejected right here","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"actor-4","label":"4. Memory checks the Idempotency-Key. Seen before returns the saved answer. A new key continues","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"actor-5","label":"5. The Brain saves the raw event, then asks The Judge for a verdict","packet":true,"from":"actor-4","to":"actor-5"},
+          {"highlight":"actor-6","label":"6. The Judge runs the rules. HIGH_AMOUNT_NEW_ACCOUNT fires. Verdict REVIEW, score 0.85","packet":true,"from":"actor-5","to":"actor-6"},
+          {"highlight":"actor-7","label":"7. The Brain saves the verdict plus the list of fired rules, all in one all-or-nothing write","packet":true,"from":"actor-6","to":"actor-7"},
+          {"highlight":"actor-1","label":"8. Front Desk replies HTTP 202 ACCEPTED with the verdict JSON. The payment is now flagged for REVIEW","packet":true,"from":"actor-7","to":"actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">📱</div>
+              <span>Client App</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">🛎️</div>
+              <span>Front Desk</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">🛂</div>
+              <span>Bouncer</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">🧠</div>
+              <span>Memory</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">⚙️</div>
+              <span>The Brain</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-6">
+              <div class="flow-actor-icon">⚖️</div>
+              <span>The Judge</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-7">
+              <div class="flow-actor-icon">🗄️</div>
+              <span>Filing Cabinet</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">Click "Next Step" to begin</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+
+        <p>Here is the friendly role name to real code-name mapping you will reuse for the rest of the course:</p>
+
+        <div class="badge-list">
+          <div class="badge-item">
+            <code class="badge-code">TransactionController</code>
+            <span class="badge-desc">"Front Desk" — receives the request and sends back the reply.</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">JWT + Validation</code>
+            <span class="badge-desc">"Bouncer" — checks your pass and that your form is filled in correctly.</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">Idempotency</code>
+            <span class="badge-desc">"Memory" — remembers requests it has already answered.</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">IngestService</code>
+            <span class="badge-desc">"The Brain" — coordinates everything and records what happened.</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">Rule Engine</code>
+            <span class="badge-desc">"The Judge" — runs the red-flag checklist and decides the verdict.</span>
+          </div>
+          <div class="badge-item">
+            <code class="badge-code">Database</code>
+            <span class="badge-desc">"Filing Cabinet" — stores the event and the verdict permanently.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: What goes IN (TransactionRequest) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The form every payment must fill in</h2>
+        <p>Before the engine will look at a payment, the payment has to match a strict template — like a customs form where every box is mandatory and checked. In the code this template is a <span class="term" data-definition="A record in Java is a short way to define a fixed bundle of named values — like a labelled form with fixed fields. Great for carrying data around without extra ceremony.">record</span> called <code>TransactionRequest</code>.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public record</span> <span class="code-function">TransactionRequest</span>(
+        <span class="code-property">@NotNull</span> UUID txId,
+        <span class="code-property">@NotBlank</span> String accountId,
+        <span class="code-property">@NotNull @DecimalMin</span>(value = <span class="code-string">"0.0"</span>, inclusive = <span class="code-keyword">true</span>)
+        <span class="code-property">@Digits</span>(integer = <span class="code-number">15</span>, fraction = <span class="code-number">4</span>) BigDecimal amount,
+        <span class="code-property">@NotBlank @Pattern</span>(regexp = <span class="code-string">"[A-Z]{3}"</span>, message = <span class="code-string">"currency must be ISO-4217 uppercase, e.g. ZAR"</span>) String currency,
+        <span class="code-property">@NotBlank @Pattern</span>(regexp = <span class="code-string">"[0-9]{4}"</span>, message = <span class="code-string">"mcc must be 4 numeric digits"</span>) String mcc,
+        <span class="code-property">@NotBlank @Pattern</span>(regexp = <span class="code-string">"WEB|MOBILE|POS|ATM|API"</span>) String channel,
+        <span class="code-property">@NotBlank @Pattern</span>(regexp = <span class="code-string">"[A-Z]{2}"</span>, message = <span class="code-string">"country must be ISO-3166-1 alpha-2 uppercase"</span>) String country,
+        <span class="code-property">@NotBlank @Pattern</span>(regexp = <span class="code-string">"[A-Z]{2}"</span>, message = <span class="code-string">"ipCountry must be ISO-3166-1 alpha-2 uppercase"</span>) String ipCountry,
+        String deviceId,
+        String merchantId,
+        <span class="code-property">@NotNull @Min</span>(<span class="code-number">0</span>) Integer accountAgeDays,
+        <span class="code-property">@NotNull</span> Instant timestamp
+) {</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This is the precise template every payment must match.</p>
+              <p class="tl">Every line needs a unique id and an account it belongs to.</p>
+              <p class="tl">The amount can never be negative — it must be zero or more.</p>
+              <p class="tl">Currency must be three capital letters like ZAR; the channel must be one of WEB, MOBILE, POS, ATM, or API.</p>
+              <p class="tl">Country codes must be two capital letters; account age must be zero or higher.</p>
+              <p class="tl">The <code>@</code>-labels are guardrails. Break any one of them and the request is rejected <em>before</em> any fraud check even runs.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>Those <code>@</code>-labels are doing <span class="term" data-definition="Validation is automatically checking that incoming data is well-formed and within allowed limits before your program trusts it — like a form rejecting a phone number with letters in it.">validation</span>. They are the airport's "is your boarding pass even real?" check, done at the very front door.</p>
+      </section>
+
+      <!-- SCREEN 4: The entry point + what comes back -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">In through the door, out with a verdict</h2>
+        <p>The Front Desk (<code>TransactionController</code>) is where the payment enters the building. Once the checks pass, it hands the payment to The Brain and waits for the answer.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        Decision decision = ingestService.<span class="code-function">ingest</span>(<span class="code-function">toDomain</span>(request), IngestService.CONSUMER_REST);
+        DecisionResponse response = <span class="code-function">toResponse</span>(decision);
+
+        <span class="code-keyword">if</span> (idempotencyKey != <span class="code-keyword">null</span> &amp;&amp; !idempotencyKey.<span class="code-function">isBlank</span>()) {
+            idempotency.<span class="code-function">store</span>(subject, idempotencyKey, bodyHash, response);
+        }
+        <span class="code-keyword">return</span> ResponseEntity.<span class="code-function">status</span>(HttpStatus.ACCEPTED).<span class="code-function">body</span>(response);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Hand the payment to The Brain (<code>ingestService</code>) and wait for a <code>Decision</code> — the verdict.</p>
+              <p class="tl">Turn that internal decision into the tidy reply the client will receive.</p>
+              <p class="tl">If the caller sent a do-not-repeat ticket (an Idempotency-Key)...</p>
+              <p class="tl">...file the answer under that ticket so a repeat request gets the same answer for free.</p>
+              <p class="tl">Reply with HTTP <strong>202 ACCEPTED</strong> and the verdict.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>And this is the exact shape of the verdict that comes back out — the <span class="term" data-definition="The data a server sends back after you ask it something. The opposite of a request, which is what you send in.">response</span>:</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public record</span> <span class="code-function">DecisionResponse</span>(
+        UUID decisionId,
+        UUID txId,
+        String status,
+        <span class="code-keyword">double</span> score,
+        <span class="code-keyword">int</span> ruleSetVersion,
+        List&lt;MatchedRule&gt; matchedRules,
+        Instant evaluatedAt
+) {
+    <span class="code-keyword">public record</span> <span class="code-function">MatchedRule</span>(String ruleId, <span class="code-keyword">int</span> priority, String reason) {}
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Exactly what the client gets back: a unique <code>decisionId</code>...</p>
+              <p class="tl">...which payment it answers, and the status (ALLOW / REVIEW / BLOCK).</p>
+              <p class="tl">A 0-to-1 risk score and which version of the rulebook was used.</p>
+              <p class="tl">The list of rules that fired — each with its name, priority, and a human-readable reason.</p>
+              <p class="tl">Plus a timestamp for when it was evaluated.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">🔢</div>
+          <div class="callout-content">
+            <strong class="callout-title">202 is success, not a bug</strong>
+            <p>An <span class="term" data-definition="A three-digit number a server returns to say how the request went. 2xx means success, 4xx means you sent something wrong, 5xx means the server broke.">HTTP status code</span> of <span class="term" data-definition="202 ACCEPTED means the server received and is handling your request successfully. It is a deliberate success code — here it signals the payment was accepted and a verdict was made.">202 ACCEPTED</span> is the engine's intended way of saying "got it, here is your verdict." If you expected a 200 and saw a 202, nothing is broken.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: Memory / idempotency -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Why a retry never charges you twice</h2>
+        <p>Networks drop. Apps time out and retry. So how does the engine avoid screening the same bag twice? With a one-time baggage tag: the <span class="term" data-definition="Idempotency means doing the same operation many times has the same effect as doing it once. An Idempotency-Key is a unique ticket the client attaches so a repeated request returns the original answer instead of being processed again.">Idempotency-Key</span>.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        <span class="code-keyword">if</span> (idempotencyKey != <span class="code-keyword">null</span> &amp;&amp; !idempotencyKey.<span class="code-function">isBlank</span>()) {
+            <span class="code-keyword">var</span> cached = idempotency.<span class="code-function">lookup</span>(subject, idempotencyKey);
+            <span class="code-keyword">if</span> (cached.<span class="code-function">isPresent</span>()) {
+                <span class="code-keyword">if</span> (!cached.<span class="code-function">get</span>().<span class="code-function">bodyHash</span>().<span class="code-function">equals</span>(bodyHash)) {
+                    ProblemDetail pd = ProblemDetail.<span class="code-function">forStatus</span>(HttpStatus.CONFLICT);
+                    pd.<span class="code-function">setType</span>(URI.<span class="code-function">create</span>(<span class="code-string">"https://fraud-engine.example/problems/idempotency-conflict"</span>));
+                    pd.<span class="code-function">setTitle</span>(<span class="code-string">"Idempotency-Key reused with different body"</span>);
+                    pd.<span class="code-function">setDetail</span>(<span class="code-string">"The same Idempotency-Key was previously used with a different payload."</span>);
+                    pd.<span class="code-function">setProperty</span>(<span class="code-string">"idempotencyKey"</span>, idempotencyKey);
+                    <span class="code-keyword">return</span> ResponseEntity.<span class="code-function">status</span>(HttpStatus.CONFLICT).<span class="code-function">body</span>(pd);
+                }
+                <span class="code-comment">// Same key + same body → return cached response verbatim.</span>
+                <span class="code-keyword">return</span> ResponseEntity.<span class="code-function">status</span>(HttpStatus.ACCEPTED).<span class="code-function">body</span>(cached.<span class="code-function">get</span>().<span class="code-function">response</span>());</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If the caller sent a do-not-repeat ticket, look it up before doing any real work.</p>
+              <p class="tl">If we have seen this ticket before, compare what was sent then versus now.</p>
+              <p class="tl">Same ticket but a <em>different</em> payment? That is suspicious bookkeeping — refuse with a <span class="term" data-definition="409 Conflict means the request clashes with the current state of things — here, reusing a ticket for a different payment. The server refuses rather than guessing what you meant.">409 Conflict</span> and explain why.</p>
+              <p class="tl">Same ticket <em>and</em> same payment? Just hand back the answer we already saved — no double processing.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>The comparison uses a <span class="term" data-definition="A hash is a short fingerprint computed from data. Identical data always produces the same fingerprint, so comparing fingerprints is a fast way to check if two payloads are exactly the same.">hash</span> of the <span class="term" data-definition="The payload is the actual data carried inside a request — here, the JSON describing the payment. The rest of the request (headers, address) is the wrapping around it.">payload</span> — a quick fingerprint — to tell "same payment" from "different payment."</p>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Key Insight</strong>
+            <p>A retry should never cost you twice. Real systems hand out a one-time ticket so a repeated request returns the <em>same</em> answer instead of doing the work again. Engineers call this property <strong>idempotency</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: Three patterns + quiz -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Three habits of a trustworthy engine</h2>
+        <p>Three design choices on this journey are worth naming, because you will see them in almost every serious backend you ever touch.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">🎫</div>
+            <h4 class="pattern-title">Idempotency-Key</h4>
+            <p class="pattern-desc">A do-not-charge-twice ticket. The same ticket plus the same payment always returns the same saved answer — retries are safe.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">🔒</div>
+            <h4 class="pattern-title">One all-or-nothing write</h4>
+            <p class="pattern-desc">The raw event and the verdict are saved together in a single database <span class="term" data-definition="In the database sense, a transaction is a group of writes that all succeed together or all fail together — never half-done. (Different from a payment transaction, which is the thing being scored.)">transaction</span> — either both land or neither does. No half-saved records.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3)">📋</div>
+            <h4 class="pattern-title">Consistent error reports</h4>
+            <p class="pattern-desc">When something is rejected, you get a structured explanation (RFC 7807 Problem Details) with a correlation id — not a cryptic crash.</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-8)"><strong>Why you should care:</strong> knowing the request-to-response shape and where each stop lives is what lets you read an <span class="term" data-definition="An API (Application Programming Interface) is the set of doors a program exposes for other programs to call — like a menu of requests you can make and the replies you get back.">API</span>, debug "my call returns something weird," and tell an AI assistant <em>exactly</em> where in the pipeline a change belongs.</p>
+
+        <h2 class="screen-heading" style="margin-top: var(--space-12)">Check your understanding</h2>
+        <p>Three quick scenarios. Pick what you think happens, then check — the explanations teach as much as the questions.</p>
+
+        <div class="quiz-container" id="quiz-module1">
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. Same Idempotency-Key plus the same body means Memory recognises the request and returns the original saved verdict verbatim. The payment is never scored a second time — that is the whole point of idempotency."
+               data-explanation-wrong="Not quite. Because the client sent the same Idempotency-Key AND the same body, the engine recognises the request from before and returns the original saved verdict. It does not run the rules again, and it does not error — a safe retry is exactly what the ticket is designed for.">
+            <h3 class="quiz-question">A client hits a timeout and retries the exact same payment — same Idempotency-Key, same body. What happens?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The payment is scored a second time and may get a different verdict.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It returns the original saved verdict — no second processing.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It returns a 409 Conflict because the key was already used.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-c"
+               data-explanation-right="Right. 202 ACCEPTED is the engine's intended success status — it means the payment was accepted and a verdict was produced. A different number than you expected is not the same as an error. Nothing is broken."
+               data-explanation-wrong="Not quite. A 202 here is not a malfunction — it is the engine's deliberate success code, meaning the payment was accepted and a verdict was returned. Status codes in the 2xx family all mean success; only 4xx (your input) and 5xx (the server) signal a real problem.">
+            <h3 class="quiz-question">A teammate says: "The API returned 202 but I expected 200 — is it broken?" What is the best response?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes — any code that is not 200 means the request failed.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Maybe — retry until you get a 200 instead.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>No — 202 ACCEPTED is the intended success status here.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-a"
+               data-explanation-right="Exactly. If the payment was rejected at the Bouncer (validation or auth) it never reached The Judge, so no decision was ever created. A 400 (bad input) or 401 (bad token) in the original response tells you it never became a decision — that is the first place to look."
+               data-explanation-wrong="Think earlier in the journey. If the payment never appears as a decision, the most likely reason is that it was stopped at the front — by validation or auth — before it ever reached the rules. A 400 or 401 on the original call means it never became a decision in the first place, so checking the database internals or the rulebook is premature.">
+            <h3 class="quiz-question">A submitted payment never shows up in GET /api/v1/decisions. Which stop on the journey would you check first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The Bouncer — was it rejected at validation or auth before reaching the engine?</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The Filing Cabinet — the database probably lost the record.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The Judge — a rule must have deleted the decision.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module1')">Try Again</button>
+        </div>
+
+        <p style="margin-top: var(--space-10)">Next up: <strong>Meet the Cast</strong> — we name every department this payment just passed through, and explain why they all live inside one single program.</p>
+      </section>
+
+    </div>
+  </div>
+</section>

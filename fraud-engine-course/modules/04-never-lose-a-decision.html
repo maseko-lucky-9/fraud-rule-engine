@@ -1,0 +1,520 @@
+<section class="module" id="module-4" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">Never Lose a Decision</h1>
+      <p class="module-subtitle">The hard part nobody sees: making sure a fraud decision is never made twice, never silently lost, and that a card-tester is actually counted in time.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- SCREEN 1: Hook + the back-office metaphor -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The engine has decided. Now the real work begins.</h2>
+        <p>Picking <em>approve</em> or <em>review</em> is the easy part. The hard part is the plumbing around it: a retried payment must not be charged twice, the "decision announced" message must never vanish, and a burst of six payments in one second must actually be <em>counted</em>.</p>
+        <p>Think of a meticulous bank back office that never loses a slip. Three little rituals keep it honest.</p>
+
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#127915;</div>
+            <div>
+              <strong>The coat-check ticket</strong>
+              <p><span class="term" data-definition="Idempotency means an operation can be repeated many times but only takes effect once. Like pressing an already-pressed elevator button — nothing extra happens.">Idempotency</span>: hand over the same ticket twice, get the same coat back. Never a second coat.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#9201;&#65039;</div>
+            <div>
+              <strong>The fading hand-stamp</strong>
+              <p>The nightclub counter scrubs off stamps older than 60 seconds, then counts the rest in one glance &mdash; deciding if a card has come and gone too many times.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-3)">&#128231;</div>
+            <div>
+              <strong>The certified-mail shelf</strong>
+              <p>Instead of risking the message not being heard, the clerk spikes a paper slip on an outbound shelf in the <em>same motion</em> as recording the decision. A runner delivers every slip later.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: Idempotency = the coat-check ticket -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Ritual 1 &mdash; The do-not-repeat ticket</h2>
+        <p>When your phone retries a payment on a flaky connection, the bank could easily process it twice. To stop that, every request carries an <span class="term" data-definition="A unique ticket the client attaches to a request so the server can recognise a retry of the same request and answer once. Like the numbered stub from a coat-check.">Idempotency-Key</span> &mdash; a coat-check ticket. Two small tricks make the ticket trustworthy.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">public static</span> String <span class="code-function">hashBody</span>(<span class="code-keyword">byte</span>[] body) {
+        <span class="code-keyword">try</span> {
+            MessageDigest md = MessageDigest.<span class="code-function">getInstance</span>(<span class="code-string">"SHA-256"</span>);
+            <span class="code-keyword">byte</span>[] digest = md.<span class="code-function">digest</span>(body);
+            StringBuilder sb = <span class="code-keyword">new</span> <span class="code-function">StringBuilder</span>(digest.length * <span class="code-number">2</span>);
+            <span class="code-keyword">for</span> (<span class="code-keyword">byte</span> b : digest) sb.<span class="code-function">append</span>(String.<span class="code-function">format</span>(<span class="code-string">"%02x"</span>, b));
+            <span class="code-keyword">return</span> sb.<span class="code-function">toString</span>();
+        } <span class="code-keyword">catch</span> (NoSuchAlgorithmException e) {
+            <span class="code-keyword">throw new</span> <span class="code-function">IllegalStateException</span>(<span class="code-string">"SHA-256 unavailable"</span>, e);
+        }
+    }
+
+    <span class="code-keyword">public static byte</span>[] <span class="code-function">toBytes</span>(String s) {
+        <span class="code-keyword">return</span> s == <span class="code-keyword">null</span> ? <span class="code-keyword">new byte</span>[<span class="code-number">0</span>] : s.<span class="code-function">getBytes</span>(StandardCharsets.UTF_8);
+    }
+
+    <span class="code-keyword">private static</span> String <span class="code-function">redisKey</span>(String subject, String key) {
+        <span class="code-keyword">return</span> <span class="code-string">"idem:"</span> + (subject == <span class="code-keyword">null</span> ? <span class="code-string">"anon"</span> : subject) + <span class="code-string">":"</span> + key;
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Two safety tricks live here.</p>
+              <p class="tl"><code>hashBody</code> turns the whole request into a short, unique <span class="term" data-definition="A fingerprint is a short code generated from a piece of data. The same input always produces the same fingerprint; different inputs almost never collide.">fingerprint</span> using <span class="term" data-definition="SHA-256 is a one-way hashing recipe that crunches any data into a fixed 64-character code. You cannot reverse it, and the tiniest change in input flips the whole code.">SHA-256</span>.</p>
+              <p class="tl">So the engine can check that a reused ticket really carries the <em>same</em> content &mdash; not a sneaky different payment under an old ticket.</p>
+              <p class="tl"><code>redisKey</code> glues the customer's identity (the <code>subject</code>) onto the ticket.</p>
+              <p class="tl">That means one customer can never reuse another customer's ticket to read or hijack their result. The ticket is tied to you.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128173;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why glue identity to the key?</strong>
+            <p>A coat-check ticket only works because it is tied to <em>your</em> coat. Without the customer prefix, a guessed ticket number could fetch someone else's fraud result.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: Velocity counting = the fading hand-stamp -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Ritual 2 &mdash; Counting that fades on its own</h2>
+        <p>To catch a card-tester, the engine asks "how many payments from this account in the last 60 seconds?" The simplest version, for a single machine, keeps a time-ordered list and drops anything too old.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">@Override</span>
+    <span class="code-keyword">public int</span> <span class="code-function">recordAndCountWithin</span>(String accountId, String txId, Instant at, Duration window) {
+        <span class="code-keyword">long</span> now = at.<span class="code-function">toEpochMilli</span>();
+        <span class="code-keyword">long</span> floor = now - window.<span class="code-function">toMillis</span>();
+        Deque&lt;Long&gt; deque = velocityByAccount.<span class="code-function">computeIfAbsent</span>(accountId, k -&gt; <span class="code-keyword">new</span> <span class="code-function">ArrayDeque</span>&lt;&gt;());
+        <span class="code-keyword">synchronized</span> (deque) {
+            <span class="code-comment">// Evict entries older than or equal to floor.</span>
+            Iterator&lt;Long&gt; it = deque.<span class="code-function">iterator</span>();
+            <span class="code-keyword">while</span> (it.<span class="code-function">hasNext</span>()) {
+                <span class="code-keyword">if</span> (it.<span class="code-function">next</span>() &lt;= floor) {
+                    it.<span class="code-function">remove</span>();
+                } <span class="code-keyword">else</span> {
+                    <span class="code-keyword">break</span>; <span class="code-comment">// deque is ordered by arrival &asymp; timestamp asc</span>
+                }
+            }
+            deque.<span class="code-function">addLast</span>(now);
+            <span class="code-keyword">return</span> deque.<span class="code-function">size</span>();
+        }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The single-machine way to count recent transactions for one account.</p>
+              <p class="tl">Work out the cut-off line: "now" minus the <span class="term" data-definition="A time window is a fixed recent stretch of time you measure over, e.g. the last 60 seconds. Anything older than the window is ignored.">window</span> (say, 60 seconds ago).</p>
+              <p class="tl">Walk the list of timestamps and throw away every stamp older than the cut-off.</p>
+              <p class="tl">Add the current transaction's time to the end, then return how many remain.</p>
+              <p class="tl">The <code>synchronized</code> lock stops two requests for the <em>same account</em> from tripping over each other &mdash; a guard against a <span class="term" data-definition="A race condition (or concurrency bug) happens when two operations run at the same time and the result depends on who finishes first. Often causes miscounts or lost updates.">race condition</span>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#9201;&#65039;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Like a nightclub hand-stamp</strong>
+            <p>Old stamps fade and get scrubbed off; the bouncer counts only what is still glowing. The window is the fade time.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: Atomic counting in Redis -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Counting correctly when there are many machines</h2>
+        <p>One machine is easy. But a real bank runs many copies of the engine at once, so the count must live in a shared place: <span class="term" data-definition="Redis is a super-fast in-memory data store many apps share over the network. Think of it as a shared scratchpad that every copy of the app can read and write.">Redis</span>. The trick is a tiny script that Redis runs <span class="term" data-definition="Atomic means an operation runs all-or-nothing with no interruption. Nothing else can sneak in halfway through.">atomically</span> &mdash; start to finish &mdash; before anything else touches that account.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">local</span> key      = KEYS[<span class="code-number">1</span>]
+<span class="code-keyword">local</span> now_ms   = <span class="code-function">tonumber</span>(ARGV[<span class="code-number">1</span>])
+<span class="code-keyword">local</span> floor_ms = <span class="code-function">tonumber</span>(ARGV[<span class="code-number">2</span>])
+<span class="code-keyword">local</span> member   = ARGV[<span class="code-number">3</span>]
+<span class="code-keyword">local</span> ttl_sec  = <span class="code-function">tonumber</span>(ARGV[<span class="code-number">4</span>])
+
+<span class="code-comment">-- Evict entries strictly older than the window floor.</span>
+redis.<span class="code-function">call</span>(<span class="code-string">'ZREMRANGEBYSCORE'</span>, key, <span class="code-string">'-inf'</span>, floor_ms - <span class="code-number">1</span>)
+
+<span class="code-comment">-- Add the new entry. Score = now_ms, member = txId.</span>
+redis.<span class="code-function">call</span>(<span class="code-string">'ZADD'</span>, key, now_ms, member)
+
+<span class="code-comment">-- Refresh the per-account TTL so the key dies if the account goes silent.</span>
+redis.<span class="code-function">call</span>(<span class="code-string">'EXPIRE'</span>, key, ttl_sec)
+
+<span class="code-keyword">return</span> <span class="code-function">tonumber</span>(redis.<span class="code-function">call</span>(<span class="code-string">'ZCARD'</span>, key))</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This little <span class="term" data-definition="Lua is a small, fast scripting language. Redis can run a Lua script as one uninterruptible unit, which is how it guarantees atomic counting.">Lua</span> script runs <em>inside</em> Redis and does four things in one breath.</p>
+              <p class="tl">Remove every event older than the window floor.</p>
+              <p class="tl">Add the new event, stamped with its time.</p>
+              <p class="tl">Refresh the auto-delete timer so the count vanishes if the account goes quiet.</p>
+              <p class="tl">Return the new count.</p>
+              <p class="tl">Because Redis finishes the whole script before any other command touches that account, two transactions in the same millisecond can <em>never</em> miscount each other.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: Spot the bug — Set vs Deque -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Spot the bug: a counter that lets bursts slip through</h2>
+        <p>Here is a tempting "simpler" velocity counter that stores timestamps in a <span class="term" data-definition="A Set is a collection that automatically refuses duplicates — it keeps only one copy of each value. Great for uniqueness, dangerous when you actually want to count repeats.">Set</span>. It looks fine, but a card-tester firing fast payments would walk right past the limit. Click the line that causes it.</p>
+
+        <div class="bug-challenge">
+          <h3>Find the flaw in this velocity counter:</h3>
+          <div class="bug-code">
+            <div class="bug-line" data-line="1" onclick="checkBugLine(this, false)">
+              <span class="line-num">1</span>
+              <code>long now = at.toEpochMilli();</code>
+            </div>
+            <div class="bug-line" data-line="2" onclick="checkBugLine(this, false)">
+              <span class="line-num">2</span>
+              <code>long floor = now - window.toMillis();</code>
+            </div>
+            <div class="bug-line bug-target" data-line="3" onclick="checkBugLine(this, true)">
+              <span class="line-num">3</span>
+              <code>Set&lt;Long&gt; stamps = byAccount.computeIfAbsent(accountId, k -&gt; new HashSet&lt;&gt;());</code>
+            </div>
+            <div class="bug-line" data-line="4" onclick="checkBugLine(this, false)">
+              <span class="line-num">4</span>
+              <code>stamps.removeIf(ts -&gt; ts &lt;= floor);</code>
+            </div>
+            <div class="bug-line" data-line="5" onclick="checkBugLine(this, false)">
+              <span class="line-num">5</span>
+              <code>stamps.add(now);</code>
+            </div>
+            <div class="bug-line" data-line="6" onclick="checkBugLine(this, false)">
+              <span class="line-num">6</span>
+              <code>return stamps.size();</code>
+            </div>
+          </div>
+          <div class="bug-feedback"></div>
+        </div>
+
+        <div class="callout callout-warning">
+          <div class="callout-icon">&#128680;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why this matters</strong>
+            <p>A <code>Set</code> stores only one copy of each value. Two payments landing in the same millisecond share a timestamp, so the Set collapses them into <em>one</em>. A fast burst gets undercounted and slips past the limit &mdash; which is exactly why the real code uses a <code>Deque</code> that keeps every entry.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: The dual-write problem + the outbox (HERO flow) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Ritual 3 &mdash; The certified-mail shelf (the outbox)</h2>
+        <p>Now the decision must be both <em>saved</em> and <em>announced</em> to other systems over a <span class="term" data-definition="A message bus is a shared pipe systems use to broadcast events to each other, so a sender does not have to know who is listening. Kafka is a popular one.">message bus</span>. Doing those as two separate steps is a classic trap.</p>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#128161;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Key Insight: the dual-write problem</strong>
+            <p>Saving to a database AND sending a message are two separate actions &mdash; one can succeed while the other fails, losing or duplicating events. The fix: make the <em>intent to send</em> part of the same save, and deliver it afterward.</p>
+          </div>
+        </div>
+
+        <p>The <span class="term" data-definition="The transactional outbox pattern writes your data and a to-send note in one database transaction, then a background job delivers the note. It sidesteps the dual-write problem.">transactional outbox</span> solves the <span class="term" data-definition="The dual-write problem: you cannot reliably write to a database AND publish to a message bus in one step — a crash between them loses or duplicates the event.">dual-write problem</span>. Walk the journey of one decision below.</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"actor-1","label":"A transaction arrives. Ingest hands the finished fraud decision over to be stored."},
+          {"highlight":"actor-2","label":"Ingest writes the Decision AND a to-send Outbox Note into the Database.","packet":true,"from":"actor-1","to":"actor-2"},
+          {"highlight":"actor-2","label":"Both rows are saved in ONE database transaction: both land, or neither does. A crash right here is safe."},
+          {"highlight":"actor-3","label":"Every 500ms the Outbox Poller wakes up and claims the unsent notes from the Database.","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"actor-4","label":"The Poller publishes each note to Kafka, the message bus other systems listen on.","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"actor-3","label":"Delivered? The Poller marks that note processed so it is never sent twice."},
+          {"highlight":"actor-5","label":"Failed too many times? The note is moved to the Dead-Letter Drawer so it stops clogging the live queue.","packet":true,"from":"actor-3","to":"actor-5"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#128229;</div>
+              <span>Ingest</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#128451;&#65039;</div>
+              <span>Database</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#128259;</div>
+              <span>Outbox Poller</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">&#128238;</div>
+              <span>Kafka</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">&#9760;&#65039;</div>
+              <span>Dead-Letter</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">Click "Next Step" to follow one decision from saved to announced</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 7: The drain loop code -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Inside the runner: the drain loop</h2>
+        <p>The <span class="term" data-definition="A poller (or scheduled job) is a background task that wakes up on a timer to check for work, instead of waiting to be told. Here it runs every 500 milliseconds.">poller</span> is the runner who carries slips from the shelf to the mailroom. Every half-second it grabs a batch and fires them all at once.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">@Scheduled</span>(fixedDelayString = <span class="code-string">"${app.outbox.poll-interval-ms:500}"</span>)
+    <span class="code-keyword">@Transactional</span>
+    <span class="code-keyword">public void</span> <span class="code-function">drain</span>() {
+        List&lt;OutboxEntity&gt; batch = outboxRepo.<span class="code-function">findPendingForUpdate</span>(batchSize);
+        <span class="code-keyword">if</span> (batch.<span class="code-function">isEmpty</span>()) {
+            <span class="code-keyword">return</span>;
+        }
+        log.<span class="code-function">debug</span>(<span class="code-string">"outbox: draining {} pending rows (lock held until commit)"</span>, batch.<span class="code-function">size</span>());
+
+        <span class="code-comment">// Dispatch every send in parallel so a single slow row can't stall the batch.</span>
+        Map&lt;OutboxEntity, CompletableFuture&lt;?&gt;&gt; inflight = <span class="code-keyword">new</span> <span class="code-function">HashMap</span>&lt;&gt;(batch.<span class="code-function">size</span>());
+        Map&lt;OutboxEntity, String&gt; lastErrors = <span class="code-keyword">new</span> <span class="code-function">HashMap</span>&lt;&gt;();
+        <span class="code-keyword">for</span> (OutboxEntity row : batch) {
+            CompletableFuture&lt;?&gt; future = kafkaTemplate
+                    .<span class="code-function">send</span>(KafkaTopics.DECISIONS_OUT, row.<span class="code-function">getAggregateId</span>().<span class="code-function">toString</span>(), row.<span class="code-function">getPayload</span>())
+                    .<span class="code-function">toCompletableFuture</span>();
+            inflight.<span class="code-function">put</span>(row, future);
+        }
+
+        CompletableFuture&lt;Void&gt; all = CompletableFuture.<span class="code-function">allOf</span>(inflight.<span class="code-function">values</span>().<span class="code-function">toArray</span>(<span class="code-keyword">new</span> CompletableFuture[<span class="code-number">0</span>]));
+        <span class="code-keyword">try</span> {
+            all.<span class="code-function">get</span>(publishTimeoutMs, TimeUnit.MILLISECONDS);
+        } <span class="code-keyword">catch</span> (InterruptedException ie) {
+            Thread.<span class="code-function">currentThread</span>().<span class="code-function">interrupt</span>();
+        } <span class="code-keyword">catch</span> (ExecutionException | TimeoutException ex) {
+            log.<span class="code-function">warn</span>(<span class="code-string">"outbox: batch publish wait failed &mdash; settling per-row. cause={}"</span>, ex.<span class="code-function">toString</span>());
+        }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Every half-second this background job wakes up.</p>
+              <p class="tl">It grabs a batch of unsent "to-publish" notes from the database. If there are none, it goes back to sleep.</p>
+              <p class="tl">It fires them all at the message bus at once &mdash; in parallel, so one slow message cannot hold up the rest.</p>
+              <p class="tl">Then it waits, but only up to a time limit.</p>
+              <p class="tl">If <span class="term" data-definition="Kafka is a high-throughput message broker (a message bus). Apps publish events to named topics; other apps subscribe and read them.">Kafka</span> is slow or down, the wait gives up cleanly instead of hanging forever &mdash; and it will decide what to do with each note individually.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 8: Settle each note -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Settling each slip: done, retry, or dead-letter</h2>
+        <p>After the send attempt, the runner inspects each note one by one. Three fates: delivered, try again later, or give up and file it away.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        <span class="code-keyword">for</span> (Map.Entry&lt;OutboxEntity, CompletableFuture&lt;?&gt;&gt; e : inflight.<span class="code-function">entrySet</span>()) {
+            OutboxEntity row = e.<span class="code-function">getKey</span>();
+            CompletableFuture&lt;?&gt; f = e.<span class="code-function">getValue</span>();
+            <span class="code-keyword">if</span> (f.<span class="code-function">isDone</span>() &amp;&amp; !f.<span class="code-function">isCompletedExceptionally</span>()) {
+                row.<span class="code-function">markProcessed</span>();
+                succeeded.<span class="code-function">add</span>(row.<span class="code-function">getId</span>());
+            } <span class="code-keyword">else</span> {
+                row.<span class="code-function">incrementRetry</span>();
+                String why = <span class="code-function">describeFailure</span>(f);
+                lastErrors.<span class="code-function">put</span>(row, why);
+                f.<span class="code-function">cancel</span>(<span class="code-keyword">true</span>);
+                <span class="code-keyword">if</span> (row.<span class="code-function">getRetryCount</span>() &gt;= maxRetries) {
+                    <span class="code-function">routeToDlt</span>(row, why);
+                    routedToDlt++;
+                } <span class="code-keyword">else</span> {
+                    log.<span class="code-function">debug</span>(<span class="code-string">"outbox: row {} stays pending (attempt {})"</span>,
+                            row.<span class="code-function">getId</span>(), row.<span class="code-function">getRetryCount</span>());
+                }
+            }
+        }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Look at each note's send result, one at a time.</p>
+              <p class="tl">Delivered? Stamp it "processed" so it is never sent again.</p>
+              <p class="tl">Failed? Add one to its <span class="term" data-definition="A retry is simply trying a failed operation again, hoping the problem (like a brief network blip) has cleared. Too many retries and you stop.">retry</span> count and leave it for next time.</p>
+              <p class="tl">Unless it has failed too many times (default 10)...</p>
+              <p class="tl">...then move it to a <span class="term" data-definition="A dead-letter (DLT) is a holding area for messages that keep failing. Parking them there stops one hopeless message from clogging the live queue forever.">dead-letter</span> drawer so one hopeless note does not clog the live queue forever.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 9: Pattern cards -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The four reliability moves, on cards</h2>
+        <p>These four patterns recur across almost every serious system. Recognising them lets you ask an AI for the right design instead of the buggy two-step.</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">&#127915;</div>
+            <h4 class="pattern-title">Idempotency</h4>
+            <p class="pattern-desc">The do-not-repeat ticket. A retried request is recognised and answered once &mdash; never charged twice.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3)">&#128231;</div>
+            <h4 class="pattern-title">Transactional outbox</h4>
+            <p class="pattern-desc">Saves the decision and a to-send note together, then delivers later. Solves the dual-write problem.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">&#9889;</div>
+            <h4 class="pattern-title">Atomic counting</h4>
+            <p class="pattern-desc">A tiny Redis script counts recent events with no interruption, so concurrent writes never miscount.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5)">&#9760;&#65039;</div>
+            <h4 class="pattern-title">Dead-letter drawer</h4>
+            <p class="pattern-desc">A holding area for hopeless messages so they stop blocking everyone else. Failures get quarantined, not lost.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128231;</div>
+          <div class="callout-content">
+            <strong class="callout-title">At-least-once delivery</strong>
+            <p>Because the outbox keeps retrying until a note is delivered, every event is guaranteed to arrive <span class="term" data-definition="At-least-once delivery means a message is guaranteed to arrive, but might arrive more than once after a retry. Listeners are built to handle duplicates safely.">at least once</span> &mdash; even if the broker was briefly down. Listeners are built to shrug off the occasional duplicate.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 10: Quiz -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Check your thinking</h2>
+        <p>Four real situations. Reason from what you just learned &mdash; there is no score, just the thinking.</p>
+
+        <div class="quiz-container" id="quiz-module4">
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. The do-not-repeat ticket (idempotency) recognises the retried request and answers once instead of processing a second charge. The retry on the flaky connection sent the same payment twice, but the key should have made the second one a no-op."
+               data-explanation-wrong="Not quite. A double charge after a retry is the textbook symptom of a missing or bypassed idempotency safeguard — the do-not-repeat ticket. Velocity counting and the outbox are about other failure modes (bursts and lost messages), not duplicate processing of one request.">
+            <h3 class="quiz-question">A customer was charged twice after their app retried a payment on a flaky connection. Which safeguard was missing or bypassed?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Velocity counting &mdash; the engine should have counted the second payment</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Idempotency &mdash; the do-not-repeat ticket that makes a retry harmless</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The dead-letter drawer &mdash; the second charge should have been quarantined</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-c"
+               data-explanation-right="Right. The decision and its to-send note were saved in ONE database transaction, so the note survives even while the broker is down. The poller keeps retrying and delivers it once Kafka is back — that is at-least-once delivery."
+               data-explanation-wrong="Think again. The whole point of the outbox is that the to-send note lives in the database, saved alongside the decision in a single transaction. A broker outage cannot lose it — the poller simply delivers it later, once the broker recovers.">
+            <h3 class="quiz-question">The message broker is down for 30 seconds right when a decision is made. Is the "decision announced" message lost?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes &mdash; if the broker is down at that moment, the announcement is gone</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Maybe &mdash; it depends whether the engine retried fast enough before giving up</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>No &mdash; the outbox note was saved with the decision, and the poller delivers it once the broker is back</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-a"
+               data-explanation-right="Spot on. The window counter sees all six payments inside the last 60 seconds, so VELOCITY_BURST trips. It must count atomically because several payments can land at almost the same instant across machines — without atomicity, concurrent writes could miscount and let the burst slip through."
+               data-explanation-wrong="Not quite. The window counter does see all six payments in the 60-second window, which is why the burst rule fires. The reason it must be atomic is that several near-simultaneous writes (possibly on different machines) could otherwise step on each other and undercount — exactly the Set-vs-Deque trap from earlier.">
+            <h3 class="quiz-question">A card-tester fires 6 tiny payments in one second on one account. Why does VELOCITY_BURST catch it, and why must the counter be atomic?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The 60s window sees all 6; atomic so concurrent writes do not miscount each other</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The window resets after each payment; atomicity just makes it run faster</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Idempotency blocks the extra 5; atomicity stops duplicate tickets</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. Save-then-send is the dual-write trap: the save can succeed while the email send fails (or vice versa), losing or duplicating notifications. Ask the AI for a transactional outbox — store the email intent in the same transaction as the order, then a background job sends it reliably."
+               data-explanation-wrong="Not quite. Writing a save followed by a separate send is the classic dual-write problem — either half can fail independently. The fix is not a bigger retry or a faster broker; it is an outbox, so the intent to email is saved with the order and delivered afterward.">
+            <h3 class="quiz-question">You are steering an AI to build a feature that "saves an order and emails the customer." It writes a save, then a send. What trap is this, and what do you ask for instead?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A race condition &mdash; ask for a lock around the save and send</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The dual-write trap &mdash; ask for an outbox so the email intent is saved with the order and sent afterward</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A missing fingerprint &mdash; ask for SHA-256 hashing of the order body</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#10145;&#65039;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Up next: The AI Consultant</strong>
+            <p>Now that every decision is made, stored, and announced without loss, an optional AI can <em>comment</em> on those decisions &mdash; but it is never allowed to decide. That is the next module.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

@@ -60,7 +60,7 @@ cp .env.example .env
 
 # Generate cryptographically-random local-only values and write them into .env:
 sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -base64 24)|" .env
-sed -i.bak "s|^JWT_HS256_SECRET=.*|JWT_HS256_SECRET=$(openssl rand -base64 48)|" .env
+sed -i.bak "s|^ =.*|JWT_HS256_SECRET=$(openssl rand -base64 48)|" .env
 sed -i.bak "s|^SERVICE_API_KEY=.*|SERVICE_API_KEY=$(openssl rand -base64 36)|" .env
 rm -f .env.bak
 ```
@@ -259,7 +259,7 @@ uv run sim audit reports/run-latest/
 decisions spanning APPROVE / REVIEW / BLOCK; audit report generated.
 
 ### CI-safe / no-Ollama mode
-
+ 
 ```bash
 uv run sim run --no-llm --profile simulator/config/profile.default.yaml
 ```
