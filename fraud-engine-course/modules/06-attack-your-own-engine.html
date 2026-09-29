@@ -1,0 +1,549 @@
+<section class="module" id="module-6" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">Attack Your Own Engine</h1>
+      <p class="module-subtitle">A second program whose entire job is to break the one you built — and turn every hole it finds into a new rule.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- SCREEN 1: The uncomfortable question + the vaccine metaphor -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Uncomfortable Question</h2>
+        <p>You built a fraud engine. Here is the question every real team must ask: <em>what does it miss?</em> This module is a second program — written in <span class="term" data-definition="Python is a programming language popular for data work and automation. Here it powers the attacker program, while the engine itself is written in Java.">Python</span> — whose whole job is to attack your engine with real fraud tricks and write up every hole it finds.</p>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">💉</div>
+          <div class="callout-content">
+            <strong class="callout-title">Think of it like a vaccine lab</strong>
+            <p>You deliberately inject weakened versions of known attacks into the body (the engine), watch which ones the immune system fails to neutralize, and from each failure you design a new antibody — a draft rule that joins the body's defenses. Controlled exposure is what makes the system stronger.</p>
+          </div>
+        </div>
+
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-5)">🟢</div>
+            <div>
+              <strong>Honest customers</strong>
+              <p>Mostly the crowd: well-behaved accounts that form the clean <span class="term" data-definition="A baseline is the normal, expected behaviour you measure everything else against. If the engine flags a baseline customer, something is broken.">baseline</span> the attacks are measured against.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">🎭</div>
+            <div>
+              <strong>Scripted adversaries</strong>
+              <p>Hand-written <span class="term" data-definition="An evasion is a fraud technique designed specifically to slip past a known detection rule without tripping it.">evasion</span> tricks — known fraud patterns engineered to dodge specific rules.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-3)">🤖</div>
+            <div>
+              <strong>LLM-invented adversaries</strong>
+              <p>A local AI invents fresh attacks the humans did not think of — used non-authoritatively, exactly like Module 5 taught.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>This whole setup is a <span class="term" data-definition="A red team is a group (or program) that role-plays the attacker to find weaknesses before real criminals do. A penetration test is the act of attacking your own system on purpose to surface holes.">red team / penetration test</span> built as a <span class="term" data-definition="A simulator (or harness) is a program that imitates real users and traffic so you can test a system safely, without real customers or real money.">simulator / harness</span> — and it hits the <em>live</em> engine over its real network door.</p>
+      </section>
+
+      <!-- SCREEN 2: The two scripted attacks (card-testing + structuring) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Two Tricks That Walk Right Past the Alarms</h2>
+        <p>Each scripted attack is built to dodge one specific rule. The first spreads a flood of tiny charges across many accounts so no single account looks busy.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">def</span> <span class="code-function">build_card_testing</span>(*, seed: int) -&gt; FraudScenario:
+    <span class="code-comment">"""Distributed micro-tx across 20 accounts — evades per-account VELOCITY_BURST."""</span>
+    sid = <span class="code-string">"evasion_card_testing"</span>
+    base = <span class="code-function">base_time</span>(hour_sast=<span class="code-number">14</span>)
+    steps: list[ScenarioStep] = []
+    <span class="code-keyword">for</span> acc_n <span class="code-keyword">in</span> <span class="code-function">range</span>(<span class="code-number">20</span>):
+        <span class="code-keyword">for</span> tx_n <span class="code-keyword">in</span> <span class="code-function">range</span>(<span class="code-number">10</span>):  <span class="code-comment"># 10 per account × 20 accounts = 200 micro-tx</span>
+            steps.<span class="code-function">append</span>(
+                <span class="code-function">ScenarioStep</span>(
+                    tx=<span class="code-function">benign_tx</span>(
+                        scenario_id=sid, step=<span class="code-function">len</span>(steps), seed=seed,
+                        account_id=<span class="code-string">f"ACC-EV-CT-{acc_n:02d}"</span>,
+                        amount=<span class="code-function">Decimal</span>(<span class="code-string">"0.99"</span>),
+                        timestamp=base + <span class="code-function">minutes</span>(tx_n),
+                        device_id=<span class="code-string">f"dev-CT-{acc_n:02d}"</span>,
+                        merchant_id=<span class="code-string">"MERCH-OK-WEB-001"</span>,
+                    ),
+                )
+            )</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A criminal with a batch of stolen card numbers wants to know which still work.</p>
+              <p class="tl">So they run a flood of tiny $0.99 charges — that is "card-testing."</p>
+              <p class="tl">The engine's speed alarm only counts how fast ONE account spends.</p>
+              <p class="tl">So this attack spreads 200 charges across 20 different accounts — each one looks calm.</p>
+              <p class="tl">This code builds exactly that crowd to prove the alarm never goes off.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>This trick is called <span class="term" data-definition="Card-testing is when a fraudster runs many tiny charges on stolen card numbers to discover which ones are still active before making bigger purchases.">card-testing</span>, and it dodges the engine's per-account speed rule. The second trick stays just under the big-amount line, over and over.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">def</span> <span class="code-function">build_structuring</span>(*, seed: int) -&gt; FraudScenario:
+    <span class="code-comment">"""Single account: $9,999 every 90 min — slips under HIGH_AMOUNT cutoff."""</span>
+    sid = <span class="code-string">"evasion_structuring"</span>
+    base = <span class="code-function">base_time</span>(hour_sast=<span class="code-number">10</span>)
+    steps = <span class="code-function">tuple</span>(
+        <span class="code-function">ScenarioStep</span>(
+            tx=<span class="code-function">benign_tx</span>(
+                scenario_id=sid, step=i, seed=seed,
+                account_id=<span class="code-string">"ACC-EV-STR-1"</span>,
+                amount=<span class="code-function">Decimal</span>(<span class="code-string">"9999.00"</span>),
+                timestamp=base + <span class="code-function">hours</span>(i * <span class="code-number">90</span> // <span class="code-number">60</span>) + <span class="code-function">minutes</span>(i * <span class="code-number">90</span> % <span class="code-number">60</span>),
+                account_age_days=<span class="code-number">15</span>,  <span class="code-comment"># younger account intensifies the miss</span>
+                merchant_id=<span class="code-string">"MERCH-OK-001"</span>,
+            ),
+        )
+        <span class="code-keyword">for</span> i <span class="code-keyword">in</span> <span class="code-function">range</span>(<span class="code-number">8</span>)
+    )
+    <span class="code-keyword">return</span> <span class="code-function">FraudScenario</span>(
+        id=sid, archetype=<span class="code-string">"structuring"</span>, targets_rule=<span class="code-string">"HIGH_AMOUNT_NEW_ACCOUNT"</span>,
+        expected_outcome=<span class="code-string">"miss"</span>,
+        description=(
+            <span class="code-string">"$9,999 transactions every 90 minutes on a 15-day-old account. "</span>
+            <span class="code-string">"HIGH_AMOUNT_NEW_ACCOUNT triggers at &gt;$10,000 — each transaction "</span>
+            <span class="code-string">"is sub-threshold. AML structuring/smurfing pattern."</span>
+        ),</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The big-amount rule only fires above $10,000.</p>
+              <p class="tl">So the attacker sends $9,999 over and over — always one dollar under the line.</p>
+              <p class="tl">Each payment looks innocent; together they move a fortune.</p>
+              <p class="tl">This is the money-laundering trick called "structuring."</p>
+              <p class="tl">It is tagged expected_outcome="miss" — today's engine cannot add up many payments over time.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">🩺</div>
+          <div class="callout-content">
+            <strong class="callout-title">Key Insight: a "miss" here is a passing test</strong>
+            <p>A miss documents a real, known gap honestly — so the team can decide to close it, not pretend it isn't there. Naming your weaknesses is how you fix them.</p>
+          </div>
+        </div>
+
+        <p>This second trick is <span class="term" data-definition="Structuring (also called smurfing) is breaking one large illegal transfer into many smaller payments, each kept under a reporting or detection threshold. It is a classic anti-money-laundering (AML) red flag.">structuring / smurfing (AML)</span> — and another known family, <span class="term" data-definition="Account takeover (ATO) is when a fraudster gains control of a legitimate customer's account, often by stealing their login, then drains it or makes purchases.">account takeover (ATO)</span>, is tested the same way.</p>
+      </section>
+
+      <!-- SCREEN 3: The honest baseline -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Clean Baseline: Honest Customers</h2>
+        <p>You cannot judge an attack without something normal to compare it to. The honest <span class="term" data-definition="A persona (or agent) is a scripted fake customer with its own behaviour pattern — honest, scripted attacker, or AI-invented attacker.">persona / agent</span> is engineered to stay under every alarm. If the engine ever flags one, you know something broke.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">def</span> <span class="code-function">_build_tx</span>(self) -&gt; Transaction:
+        <span class="code-keyword">return</span> <span class="code-function">Transaction</span>(
+            txId=<span class="code-function">uuid4</span>(),
+            accountId=self.account.account_id,
+            amount=self.<span class="code-function">_next_amount</span>(),
+            currency=<span class="code-string">"ZAR"</span>,
+            mcc=self._rng.<span class="code-function">choice</span>(_BENIGN_MCCS),
+            channel=self.account.primary_channel <span class="code-keyword">if</span> <span class="code-function">isinstance</span>(self.account.primary_channel, Channel)
+            <span class="code-keyword">else</span> <span class="code-function">Channel</span>(self.account.primary_channel),
+            country=self.account.home_country,
+            ipCountry=self.account.home_country,  <span class="code-comment"># honest persona never crosses borders</span>
+            deviceId=self.account.device_id,
+            merchantId=self._rng.<span class="code-function">choice</span>(_BENIGN_MERCHANTS),
+            accountAgeDays=self.account.account_age_days,
+            timestamp=self.<span class="code-function">_next_timestamp</span>(),
+        )</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">One payment for a well-behaved customer.</p>
+              <p class="tl">Small random amount, a normal local currency.</p>
+              <p class="tl">Home country for BOTH location fields — this customer never crosses borders.</p>
+              <p class="tl">Usual device, trusted shop, real account age.</p>
+              <p class="tl">Everything is tuned to fall under every alarm — the clean baseline.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">🎲</div>
+          <div class="callout-content">
+            <strong class="callout-title">Same seed → same crowd</strong>
+            <p>The crowd is generated from a <span class="term" data-definition="A seed is a starting number that makes a stream of random choices repeatable. Deterministic means: same seed in, exactly the same result out — no surprises.">seed / deterministic</span> value, so the exact same accounts and attacks appear every run. Tests that produce different results each time are useless — repeatability is what makes them trustworthy.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: The scoreboard (metrics) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Scoreboard: Catches vs. Misses</h2>
+        <p>After the crowd hits the live engine, an analysis step in <span class="term" data-definition="pandas is a Python tool for working with tables of data. A DataFrame is one such table — rows and columns, like a spreadsheet you can do maths on.">pandas / DataFrame</span> tallies, for every test, what the engine should have done versus what it actually did.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">for</span> _, row <span class="code-keyword">in</span> df.<span class="code-function">iterrows</span>():
+        classification = <span class="code-function">_scenario_classification</span>(row.<span class="code-function">get</span>(<span class="code-string">"scenario_id"</span>) <span class="code-keyword">or</span> <span class="code-string">""</span>)
+        <span class="code-keyword">if</span> classification <span class="code-keyword">is</span> <span class="code-keyword">None</span>:
+            <span class="code-keyword">continue</span>
+        rule, kind = classification
+        matched = rule <span class="code-keyword">in</span> row[<span class="code-string">"matched_rules_list"</span>]
+        bucket = rows.<span class="code-function">setdefault</span>(rule, {<span class="code-string">"tp"</span>: <span class="code-number">0</span>, <span class="code-string">"fp"</span>: <span class="code-number">0</span>, <span class="code-string">"fn"</span>: <span class="code-number">0</span>, <span class="code-string">"tn"</span>: <span class="code-number">0</span>})
+        <span class="code-keyword">if</span> kind == <span class="code-string">"positive"</span> <span class="code-keyword">and</span> matched:
+            bucket[<span class="code-string">"tp"</span>] += <span class="code-number">1</span>
+        <span class="code-keyword">elif</span> kind == <span class="code-string">"positive"</span> <span class="code-keyword">and</span> <span class="code-keyword">not</span> matched:
+            bucket[<span class="code-string">"fn"</span>] += <span class="code-number">1</span>
+        <span class="code-keyword">elif</span> kind <span class="code-keyword">in</span> {<span class="code-string">"negative"</span>, <span class="code-string">"boundary"</span>} <span class="code-keyword">and</span> <span class="code-keyword">not</span> matched:
+            bucket[<span class="code-string">"tn"</span>] += <span class="code-number">1</span>
+        <span class="code-keyword">elif</span> kind <span class="code-keyword">in</span> {<span class="code-string">"negative"</span>, <span class="code-string">"boundary"</span>} <span class="code-keyword">and</span> matched:
+            bucket[<span class="code-string">"fp"</span>] += <span class="code-number">1</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">For every test, the code already knows what the engine SHOULD have done.</p>
+              <p class="tl">Should-catch and did → "true positive" (a good catch).</p>
+              <p class="tl">Should-catch but didn't → "false negative" — a dangerous miss.</p>
+              <p class="tl">A clean customer wrongly flagged → "false positive."</p>
+              <p class="tl">These four tallies per rule become the engine's report card.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>Those four tallies turn into two famous numbers. A <span class="term" data-definition="A false positive is a false alarm: the engine flags something that was actually fine. A false negative is a miss: the engine lets through something it should have caught.">false positive / false negative</span> count feeds <span class="term" data-definition="Precision asks: of everything the engine flagged, how much was real fraud? Recall asks: of all the real fraud, how much did the engine actually catch? Together they grade a detector.">precision / recall</span> — the engine's report card.</p>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">🔒</div>
+          <div class="callout-content">
+            <strong class="callout-title">Numbers from code, prose from the AI</strong>
+            <p>Every authoritative number is computed deterministically by this code. The AI only writes the narrative and never sees the raw rows — so it cannot invent or contradict a statistic. (This is Module 5's "AI advises, never decides," applied to reporting.)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: The auditor closes the loop + validation -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Closing the Loop: A Miss Becomes a New Rule</h2>
+        <p>This is the payoff. The <span class="term" data-definition="A feedback loop is a cycle where the output of a process is fed back in to improve it. Here, holes found by attacking become new rules that make the engine stronger.">feedback loop</span> closes when the auditor turns every genuine miss into a proposed new rule.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">def</span> <span class="code-function">_default_findings_from_evasion</span>(metrics: RunMetrics) -&gt; list[FindingDraft]:
+    drafts: list[FindingDraft] = []
+    <span class="code-keyword">for</span> outcome <span class="code-keyword">in</span> metrics.evasion_outcomes:
+        sid = outcome[<span class="code-string">"scenario_id"</span>]
+        <span class="code-keyword">if</span> outcome.<span class="code-function">get</span>(<span class="code-string">"actual"</span>) != <span class="code-string">"miss"</span>:
+            <span class="code-keyword">continue</span>
+        <span class="code-keyword">if</span> sid <span class="code-keyword">not</span> <span class="code-keyword">in</span> _DEFAULT_STUBS:
+            <span class="code-keyword">continue</span>
+        severity, title, stub = _DEFAULT_STUBS[sid]
+        drafts.<span class="code-function">append</span>(<span class="code-function">FindingDraft</span>(
+            severity=severity, scenario_id=sid, title=title,
+            proposed_yaml_stub=stub,
+        ))
+    drafts.<span class="code-function">sort</span>(key=<span class="code-keyword">lambda</span> d: (d.severity, d.scenario_id))
+    <span class="code-keyword">return</span> drafts</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The auditor looks at every attack.</p>
+              <p class="tl">Whenever the engine actually MISSED one...</p>
+              <p class="tl">...it pulls a matching draft rule off the shelf.</p>
+              <p class="tl">It adds it to the report as a ranked finding (P0 most urgent down to P2).</p>
+              <p class="tl">A hole found by attacking becomes a proposed new rule — the same kind the engine hot-reloads in Module 3.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>But the auditor must never propose a rule the engine cannot run. A <span class="term" data-definition="A predicate allowlist is a fixed list of the only building blocks the engine knows how to evaluate (like an amount check or a country check). Anything not on the list is treated as unknown.">predicate allowlist</span> check walks the draft and downgrades anything that uses an unknown building block.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        <span class="code-keyword">for</span> key, value <span class="code-keyword">in</span> node.<span class="code-function">items</span>():
+            <span class="code-keyword">if</span> key <span class="code-keyword">in</span> self._combinators:
+                self.<span class="code-function">_scan_condition</span>(value, unknown)
+            <span class="code-keyword">elif</span> key <span class="code-keyword">in</span> self._predicates:
+                <span class="code-comment"># Known predicate — its value is opaque args, don't walk.</span>
+                <span class="code-keyword">continue</span>
+            <span class="code-keyword">else</span>:
+                unknown.<span class="code-function">add</span>(key)</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Before a draft is called "drop-in ready," walk every condition in it.</p>
+              <p class="tl">A block the engine recognizes (an amount or country check) is fine.</p>
+              <p class="tl">Something invented — like "add up 24 hours of spending" — gets flagged as unknown.</p>
+              <p class="tl">Rules using unknown blocks are honestly downgraded to "requires a new predicate."</p>
+              <p class="tl">So the report never ships a rule that would crash the engine.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: The grand finale flow + the patterns + course recap -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Full Loop — The Course Finale</h2>
+        <p>Step through the whole feedback loop. Watch the final arrow swing back to the engine — that loop-back is the entire point: the system gets smarter <em>by being attacked</em>.</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"actor-1","label":"100 fake accounts are generated from one seed — mostly honest, some scripted attackers, some AI-invented."},
+          {"highlight":"actor-2","label":"Personas turn those accounts into behaviour: honest payments, evasion tricks, fresh AI attacks.","packet":true,"from":"actor-1","to":"actor-2"},
+          {"highlight":"actor-3","label":"Every transaction hits the LIVE engine over its real network door (REST) — the actual Java engine from Module 3.","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"actor-4","label":"The engine writes which rules it matched into a results database.","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"actor-5","label":"The metrics step (pandas) tallies catches and misses — every authoritative number computed by code.","packet":true,"from":"actor-4","to":"actor-5"},
+          {"highlight":"actor-6","label":"The auditor turns each real miss into a ranked finding and validates a draft rule against what the engine can run.","packet":true,"from":"actor-5","to":"actor-6"},
+          {"highlight":"actor-7","label":"Out comes a draft YAML rule — only proposed as drop-in ready if the engine actually understands its building blocks.","packet":true,"from":"actor-6","to":"actor-7"},
+          {"highlight":"actor-3","label":"THE LOOP CLOSES: the new rule is hot-reloaded back into the live engine from Module 3. The weakness is now a defense.","packet":true,"from":"actor-7","to":"actor-3"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">👥</div>
+              <span>Account Pool</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">🎭</div>
+              <span>Personas</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">⚙️</div>
+              <span>Live Engine</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">🗄️</div>
+              <span>Results DB</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">📊</div>
+              <span>Metrics</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-6">
+              <div class="flow-actor-icon">🔍</div>
+              <span>Auditor</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-7">
+              <div class="flow-actor-icon">📝</div>
+              <span>Draft Rule</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">Click "Next Step" to begin</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+
+        <p>Behind that loop run a few quiet engineering habits worth naming. They are the difference between a toy and something you can trust.</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">🔁</div>
+            <h4 class="pattern-title">Closing the loop</h4>
+            <p class="pattern-desc">Gap → draft rule → hot reload. A weakness found by attacking becomes a defense added back into the live engine.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">🔒</div>
+            <h4 class="pattern-title">Numbers from pandas, prose from the AI</h4>
+            <p class="pattern-desc">Code computes every statistic; the AI only writes narrative — so it can never invent or contradict a number.</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3)">🛡️</div>
+            <h4 class="pattern-title">Validate, then downgrade</h4>
+            <p class="pattern-desc">Never ship a broken rule. If a draft needs a block the engine lacks, it is honestly marked "requires a new predicate."</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4)">🎲</div>
+            <h4 class="pattern-title">Seed-driven determinism</h4>
+            <p class="pattern-desc">Same seed → same crowd. Every run is repeatable, so results are trustworthy and bugs are reproducible.</p>
+          </div>
+        </div>
+
+        <p>One more behind-the-scenes detail: the whole crowd hits the engine at once using <span class="term" data-definition="Async (asynchronous) means a program can start many tasks and let them run at the same time instead of waiting for each to finish. Concurrency is doing many things at once — here, hundreds of fake customers hitting the engine together.">async / concurrency</span>, and the results land in a small file database called <span class="term" data-definition="SQLite is a tiny, file-based database — the whole thing lives in a single file with no separate server. Great for tests and local tools.">SQLite</span>.</p>
+      </section>
+
+      <!-- SCREEN 7: Quiz -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Think It Through</h2>
+        <p>No memorizing — each question hands you a new situation and asks you to apply what you just learned.</p>
+
+        <div class="quiz-container" id="quiz-module6">
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. VELOCITY_BURST counts how fast a SINGLE account spends. By splitting 200 tiny charges across 20 accounts, each account stays calm and the per-account counter never spikes. The attack exploits the rule's narrow point of view."
+               data-explanation-wrong="Not quite. The amount isn't the issue here — the speed rule doesn't care about $0.99 being small. The real trick is WHERE the activity is counted: VELOCITY_BURST measures speed per account, so spreading the charges across 20 accounts keeps every single one looking calm.">
+            <h3 class="quiz-question">The card-testing attack runs 200 charges, yet the speed rule VELOCITY_BURST never fires. Why does it slip through?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The charges are only $0.99, which is below the engine's minimum amount to evaluate.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>VELOCITY_BURST counts speed per account; spreading 200 charges across 20 accounts keeps each one calm.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The engine was offline during the test, so nothing was evaluated.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-c"
+               data-explanation-right="Right. A scenario tagged expected_outcome='miss' is documenting a known gap on purpose. When the engine misses it, reality matches the documented weakness — so the test PASSES. It is honest record-keeping, not a broken simulator."
+               data-explanation-wrong="Think again. The simulator isn't failing — the 'miss' was expected and written down deliberately. A passing miss simply means the engine behaved exactly as the documented gap predicted. Naming a weakness honestly is the whole point; it lets the team decide whether to close it.">
+            <h3 class="quiz-question">A scenario is tagged expected_outcome="miss" and the test passes. Is the simulator broken?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes — any miss means the engine failed and the test should be red.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes — a test that "passes" on a miss is hiding a bug.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>No — a "miss" is a deliberately documented gap; a passing miss means reality matches the known weakness.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-a"
+               data-explanation-right="Spot on. The rule checks accountAgeBelow: 30, and 31 is NOT below 30 — so a 31-day-old account just clears the line and a $50,000 charge sails through. This off-by-one boundary is exactly what synthetic-identity fraud aims at: age the fake account one day past the cutoff."
+               data-explanation-wrong="Look at the boundary more carefully. The amount ($50,000) is huge, but the rule has TWO conditions — and the age condition is 'below 30 days.' A 31-day-old account is not below 30, so the rule's age requirement is not met and it never fires. It is an off-by-one boundary the attacker deliberately steps over.">
+            <h3 class="quiz-question">HIGH_AMOUNT_NEW_ACCOUNT uses accountAgeBelow: 30. A $50,000 charge on a 31-day-old account sails through. Why?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>31 is not below 30 — the account just clears the boundary, so the age condition is never met.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>$50,000 is below the engine's high-amount cutoff.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The engine only checks account age, never the amount.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Correct. The validator walks the draft and finds a 'sum 24 hours of spend' block the engine cannot evaluate. So it honestly downgrades the rule to 'suggested mitigation (requires a new predicate).' Presenting it as drop-in ready would ship a rule that crashes the live engine — never trade honesty for a shinier report."
+               data-explanation-wrong="Careful — eagerness here is dangerous. The engine has a fixed allowlist of building blocks it understands, and 'sum 24 hours of spend' isn't one of them. Marking the rule drop-in ready would crash the engine on hot-reload. The honest move is to downgrade it to 'requires a new predicate.'">
+            <h3 class="quiz-question">Your auditor proposes a rule that needs a "sum 24 hours of spend" check the engine doesn't have. Should the report present it as drop-in ready?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes — the rule catches real fraud, so ship it and fix the engine later.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>No — downgrade it honestly to "requires a new predicate"; shipping it would crash the engine.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes — the AI wrote it, so it must already be compatible.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module6')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module6')">Try Again</button>
+        </div>
+      </section>
+
+      <!-- SCREEN 8: Course closing recap -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">You Now Understand How a Fraud Engine Thinks</h2>
+        <p>You made it. You can now trace a payment from the moment it arrives all the way to a decision — and back again as a brand-new rule. Here is the whole course in one breath:</p>
+
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>The transaction arrives</strong>
+              <p>A single payment lands at the engine's network door, carrying everything the rules need to judge it.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>The engine inspects it</strong>
+              <p>It checks the payment against each rule, looking for danger signs without trusting any single one blindly.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Rules are data, not code</strong>
+              <p>The rules live in editable YAML files the engine hot-reloads — so you change behaviour without touching the program.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>Scores add up to a verdict</strong>
+              <p>Each matched rule contributes a weight; the totals decide allow, review, or block.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <strong>The AI consultant advises</strong>
+              <p>A local AI explains and suggests — but the deterministic rules, never the AI, make the final call.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <strong>You attack your own engine</strong>
+              <p>A red-team simulator finds the holes, and each hole becomes a new rule hot-reloaded back into Module 3.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">🏆</div>
+          <div class="callout-content">
+            <strong class="callout-title">The two lessons to carry with you</strong>
+            <p><strong>Rules as data (Module 3):</strong> keep the changeable parts in editable files so you can adapt without rewriting the program. <strong>AI advises, never decides (Module 5):</strong> let the AI explain and suggest, but keep the final, accountable decision in deterministic code. Build with both instincts and you will ship software you can actually trust.</p>
+          </div>
+        </div>
+
+        <p>And the most valuable instinct of all: assume your thing has holes, then go find them on purpose. That is how weaknesses become strengths — and how you escape the AI bug-loop to ship something reliable.</p>
+      </section>
+
+    </div>
+  </div>
+</section>

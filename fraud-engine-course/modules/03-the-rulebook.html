@@ -1,0 +1,493 @@
+<section class="module" id="module-3" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">The Rulebook</h1>
+      <p class="module-subtitle">How the engine decides &mdash; and why its rules live in a file an analyst can edit, not in code.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ============ SCREEN 1: The hook + metaphor ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The rule was never hiding in the code</h2>
+        <p>Back in Module 1, a rule called <strong>HIGH_AMOUNT_NEW_ACCOUNT</strong> decided to flag that R12,500 payment for human review. Here is the surprise: that rule is not buried inside the program.</p>
+        <p>It lives in a plain text file a fraud analyst can open and edit &mdash; and change without a single developer or
+          <span class="term" data-definition="To push a new version of an app onto the servers that run it. Normally any behaviour change needs a redeploy, which can take minutes to hours and involves engineers.">redeploy</span>.</p>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#127911;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Think of a Smart Playlist</strong>
+            <p>In a music app you build a smart playlist from a settings panel: "if genre is Jazz AND year is after 2000, add it." You pick conditions from a fixed dropdown, hit <em>apply</em>, and the playlist updates live &mdash; no coding. A fraud rulebook works exactly the same way: the rules are the playlist settings, the available tests are the dropdown, and hot-reload is hitting <em>apply</em>.</p>
+          </div>
+        </div>
+
+        <div class="icon-rows" style="margin-top: var(--space-8)">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#128221;</div>
+            <div>
+              <strong>The rules = the playlist settings</strong>
+              <p>Editable data: thresholds, conditions, and what to do when they match.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#9776;</div>
+            <div>
+              <strong>The <span class="term" data-definition="A predicate is a single reusable yes/no test, like amountAbove or geoMismatch. Rules pick from this menu of tests the way you pick conditions from a dropdown.">predicates</span> = the dropdown of conditions</strong>
+              <p>A fixed menu of building-block tests an analyst chooses from.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-5)">&#9889;</div>
+            <div>
+              <strong><span class="term" data-definition="Reloading new settings into a running program without stopping and restarting it. Like hitting apply on a playlist while the music keeps playing.">Hot reload</span> = hitting <em>apply</em></strong>
+              <p>The new rulebook takes effect live, without restarting the app.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCREEN 2: A whole rule as plain settings (YAML translation) ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A whole rule, written as settings</h2>
+        <p>Here is the actual HIGH_AMOUNT_NEW_ACCOUNT rule. It is written in
+          <span class="term" data-definition="YAML is a simple, indentation-based text format for settings and configuration. It is designed so non-programmers can read and edit it &mdash; no curly braces or semicolons, just labels and values.">YAML</span>,
+          a settings format made to be human-readable. Read the right side first.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; rule-set-v1.yml</span>
+            <pre><code>    - <span class="code-property">id</span>: HIGH_AMOUNT_NEW_ACCOUNT
+      <span class="code-property">priority</span>: <span class="code-number">800</span>
+      <span class="code-property">severity</span>: HIGH
+      <span class="code-property">shortCircuit</span>: <span class="code-keyword">false</span>
+      <span class="code-property">condition</span>:
+        <span class="code-property">all</span>:
+          - <span class="code-property">predicate</span>: amountAbove
+            <span class="code-property">args</span>: { value: <span class="code-number">10000</span>, currency: <span class="code-string">"ZAR"</span> }
+          - <span class="code-property">predicate</span>: accountAgeBelow
+            <span class="code-property">args</span>: { days: <span class="code-number">30</span> }
+      <span class="code-property">action</span>:
+        <span class="code-property">flag</span>: REVIEW
+        <span class="code-property">score</span>: <span class="code-number">0.85</span>
+        <span class="code-property">reason</span>: <span class="code-string">"High amount on a young account."</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This rule has a name (an <span class="term" data-definition="A short, unique label that names one thing so the system can refer to it. Like a username, but for a rule.">id</span>) so people and logs can refer to it.</p>
+              <p class="tl"><span class="term" data-definition="A number that decides the order rules run in. Higher priority rules are checked first, so the most serious checks happen up front.">Priority</span> 800 sets how early it runs &mdash; higher numbers run first.</p>
+              <p class="tl">Severity HIGH labels how dangerous a match is, for reporting.</p>
+              <p class="tl"><span class="term" data-definition="When a rule is marked short-circuit, the moment it matches the engine stops checking the rest. Used for obvious blocks where the answer is already final.">shortCircuit</span> false means: if this matches, keep checking other rules too.</p>
+              <p class="tl">Now the <span class="term" data-definition="The if-part of a rule: the test (or group of tests) that must be true for the rule to apply.">condition</span> &mdash; the IF part of the rule.</p>
+              <p class="tl"><span class="term" data-definition="A way to join tests so that EVERY one must pass. The plain-English equivalent of AND.">all</span> means every test below must pass (this is AND).</p>
+              <p class="tl">Test 1: use the amountAbove check...</p>
+              <p class="tl">...with these settings: amount over 10,000 in rand (ZAR).</p>
+              <p class="tl">Test 2: use the accountAgeBelow check...</p>
+              <p class="tl">...with this setting: account younger than 30 days.</p>
+              <p class="tl">If both pass, here is what to do (the <span class="term" data-definition="The then-part of a rule: what happens when its condition is true &mdash; the verdict, the risk score, and a human-readable reason.">action</span>):</p>
+              <p class="tl">Flag it REVIEW &mdash; send it to a human, do not auto-block.</p>
+              <p class="tl">Attach a risk score of 0.85 (out of 1.0).</p>
+              <p class="tl">And a readable reason analysts will actually see.</p>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">No programming anywhere. An analyst can change <code>10000</code> to <code>8000</code>, save, reload &mdash; and the
+          <span class="term" data-definition="A cut-off value a test compares against, like 10,000 rand. Change the threshold and the rule behaves differently without any code change.">threshold</span> is now lower. No developer needed.</p>
+      </section>
+
+      <!-- ============ SCREEN 3: The reusable test (predicate) + registry ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">One test, reused everywhere</h2>
+        <p>The YAML said <code>amountAbove</code>. That name points to a small piece of real code &mdash; a
+          <span class="term" data-definition="A predicate is a single reusable yes/no test. The same predicate can power many rules; only the settings (like the threshold) change.">predicate</span>.
+          It is written once and reused for every amount rule.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; AmountAbovePredicate.java</span>
+            <pre><code>    <span class="code-function">@Override</span>
+    <span class="code-keyword">public</span> <span class="code-keyword">boolean</span> <span class="code-function">test</span>(PredicateContext ctx, Map&lt;String, Object&gt; args) {
+        BigDecimal threshold = PredicateArgs.<span class="code-function">requireBigDecimal</span>(args, <span class="code-string">"value"</span>);
+        String currency = PredicateArgs.<span class="code-function">requireString</span>(args, <span class="code-string">"currency"</span>);
+        <span class="code-keyword">var</span> tx = ctx.<span class="code-function">transaction</span>();
+        <span class="code-keyword">return</span> currency.<span class="code-function">equals</span>(tx.<span class="code-function">currency</span>()) &amp;&amp; tx.<span class="code-function">amount</span>().<span class="code-function">compareTo</span>(threshold) &gt; <span class="code-number">0</span>;
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This is the one reusable fraud test, named amountAbove.</p>
+              <p class="tl">It runs a yes/no check, given the transaction and the rule's settings.</p>
+              <p class="tl">Read the threshold number out of the settings (the "value").</p>
+              <p class="tl">Read the currency out of the settings too.</p>
+              <p class="tl">Grab the transaction we are checking.</p>
+              <p class="tl">Return true only if the currency matches AND the amount is bigger than the threshold.</p>
+              <p class="tl">Done &mdash; one clean yes/no answer.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#128161;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Key Insight: rules are data, not code</strong>
+            <p>The <em>same</em> code serves a 10,000 rule and a 5,000 rule &mdash; the number comes from the YAML, not the code. When you separate the <em>rules</em> from the <em>machinery</em>, the people who understand fraud can change the rules, and the people who build software can improve the machinery &mdash; independently. Ask your AI assistant for this whenever thresholds might change: "don't hardcode these values; make them configurable data I can change without redeploying."</p>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-xl); margin-top: var(--space-10)">How does the name find the code?</h3>
+        <p>At startup the app builds a phone book &mdash; a
+          <span class="term" data-definition="A lookup table that maps a name to the thing it refers to. Like a phone book: you know the name, it gives you the number. Here it maps amountAbove to the code that runs it.">registry</span> &mdash;
+          filing every test under its name. If two tests claim the same name, it refuses to start.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; PredicateRegistry.java</span>
+            <pre><code>    <span class="code-keyword">public</span> <span class="code-function">PredicateRegistry</span>(List&lt;Predicate&gt; predicates) {
+        Map&lt;String, Predicate&gt; map = <span class="code-keyword">new</span> <span class="code-function">HashMap</span>&lt;&gt;();
+        <span class="code-keyword">for</span> (Predicate p : predicates) {
+            Predicate existing = map.<span class="code-function">putIfAbsent</span>(p.<span class="code-function">id</span>(), p);
+            <span class="code-keyword">if</span> (existing != <span class="code-keyword">null</span>) {
+                <span class="code-keyword">throw new</span> <span class="code-function">IllegalStateException</span>(<span class="code-string">"Duplicate predicate id: "</span> + p.<span class="code-function">id</span>()
+                        + <span class="code-string">" ("</span> + existing.<span class="code-function">getClass</span>().<span class="code-function">getName</span>() + <span class="code-string">" vs "</span> + p.<span class="code-function">getClass</span>().<span class="code-function">getName</span>() + <span class="code-string">")"</span>);
+            }
+        }
+        <span class="code-keyword">this</span>.byId = Map.<span class="code-function">copyOf</span>(map);
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">At startup, collect every fraud test that exists.</p>
+              <p class="tl">Make an empty lookup table to file them in.</p>
+              <p class="tl">Go through the tests one by one.</p>
+              <p class="tl">File each one under its name &mdash; but check if that name is already taken.</p>
+              <p class="tl">If two tests claim the same name...</p>
+              <p class="tl">...refuse to start, and say exactly which two clashed.</p>
+              <p class="tl">(So you are never left guessing which one silently won.)</p>
+              <p class="tl">Otherwise, lock the finished phone book in place.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCREEN 4: The evaluation loop (beating heart) + flow animation ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The beating heart: walking the rules</h2>
+        <p>Now the engine has a transaction and a rulebook. It walks the rules one at a time, in
+          <span class="term" data-definition="The sequence rules are checked in, set by each rule's priority number. Most serious checks first.">priority order</span>,
+          keeping the strictest verdict it has seen.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; RuleEngine.java</span>
+            <pre><code>            <span class="code-keyword">for</span> (Rule rule : snapshot.<span class="code-function">rules</span>()) {
+                <span class="code-keyword">if</span> (<span class="code-function">evaluateCondition</span>(rule.<span class="code-function">condition</span>(), ctx)) {
+                    Action action = rule.<span class="code-function">action</span>();
+                    matched.<span class="code-function">add</span>(<span class="code-keyword">new</span> <span class="code-function">RuleResult</span>(rule.<span class="code-function">id</span>(), rule.<span class="code-function">priority</span>(), action.<span class="code-function">reason</span>()));
+                    maxScore = Math.<span class="code-function">max</span>(maxScore, action.<span class="code-function">score</span>());
+                    status = <span class="code-function">stricter</span>(status, action.<span class="code-function">flag</span>());
+                    <span class="code-keyword">if</span> (rule.<span class="code-function">shortCircuit</span>()) <span class="code-keyword">break</span>;
+                }
+            }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Go through every rule in the rulebook, in order.</p>
+              <p class="tl">For each rule, check: is its condition true for this transaction?</p>
+              <p class="tl">If yes, grab what the rule wants to do (its action).</p>
+              <p class="tl">Record the match &mdash; rule name, priority, and reason &mdash; for the audit trail.</p>
+              <p class="tl">Keep the highest risk score seen so far (not a total &mdash; the max).</p>
+              <p class="tl">Upgrade to the strictest verdict so far (REVIEW can become BLOCK, never the reverse).</p>
+              <p class="tl">If this rule says shortCircuit, stop right now &mdash; the answer is final.</p>
+              <p class="tl">Otherwise, keep walking the rest of the rules.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-xl); margin-top: var(--space-10)">Watch the walk happen</h3>
+        <p>Step through the engine checking one transaction against the stack of rules. Notice how a
+          <span class="term" data-definition="A match that ends the walk early. The engine stops checking the rest because the verdict is already as severe as it gets.">short-circuit</span>
+          BLOCK halts the remaining rules.</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"actor-1","label":"A R12,500 transaction arrives and the engine starts walking the rulebook."},
+          {"highlight":"actor-2","label":"Rule BLACKLISTED_MERCHANT, priority 1000, runs first. The engine asks the registry for its test.","packet":true,"from":"actor-1","to":"actor-2"},
+          {"highlight":"actor-3","label":"Registry hands back the named test. The merchant is clean, so no match. Move on.","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"actor-2","label":"Rule VELOCITY_BURST, priority 900, runs next. Many transactions in seconds &mdash; it MATCHES and says BLOCK."},
+          {"highlight":"actor-3","label":"BLOCK is the strictest possible verdict and this rule is short-circuit. The engine stops the walk.","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"actor-2","label":"HIGH_AMOUNT_NEW_ACCOUNT, priority 800, is never even checked &mdash; the answer was already final at priority 900."}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#128179;</div>
+              <span>Transaction</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#9881;</div>
+              <span>Rule Engine</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#128214;</div>
+              <span>Predicate Registry</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">Click "Next Step" to begin</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128290;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Strictest verdict, highest score</strong>
+            <p>Most-serious checks run first, and an obvious BLOCK can short-circuit the rest. The final verdict is the <em>strictest</em> rule that matched &mdash; and the score is the <em>highest</em> match, never a sum. Two REVIEWs do not add up to a BLOCK.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCREEN 5: all / any + hot reload ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Joining tests &mdash; and swapping the rulebook live</h2>
+        <p>A condition can be a single test, or a group joined by
+          <span class="term" data-definition="all means every test in the group must pass. It is the plain-English form of the logical AND.">all</span> (AND) or
+          <span class="term" data-definition="any means at least one test in the group must pass. It is the plain-English form of the logical OR.">any</span> (OR).
+          Groups can nest, so analysts build rich logic in plain YAML.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; RuleEngine.java</span>
+            <pre><code>    <span class="code-keyword">private</span> <span class="code-keyword">boolean</span> <span class="code-function">evaluateCondition</span>(Condition cond, PredicateContext ctx) {
+        <span class="code-keyword">return</span> <span class="code-keyword">switch</span> (cond) {
+            <span class="code-keyword">case</span> Condition.Atomic atomic -&gt; registry.<span class="code-function">require</span>(atomic.<span class="code-function">predicateId</span>()).<span class="code-function">test</span>(ctx, atomic.<span class="code-function">args</span>());
+            <span class="code-keyword">case</span> Condition.All all -&gt; {
+                <span class="code-keyword">for</span> (Condition c : all.<span class="code-function">children</span>()) {
+                    <span class="code-keyword">if</span> (!<span class="code-function">evaluateCondition</span>(c, ctx)) <span class="code-keyword">yield</span> <span class="code-keyword">false</span>;
+                }
+                <span class="code-keyword">yield</span> <span class="code-keyword">true</span>;
+            }
+            <span class="code-keyword">case</span> Condition.Any any -&gt; {
+                <span class="code-keyword">for</span> (Condition c : any.<span class="code-function">children</span>()) {
+                    <span class="code-keyword">if</span> (<span class="code-function">evaluateCondition</span>(c, ctx)) <span class="code-keyword">yield</span> <span class="code-keyword">true</span>;
+                }
+                <span class="code-keyword">yield</span> <span class="code-keyword">false</span>;
+            }
+        };
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Decide whether one condition is true for this transaction.</p>
+              <p class="tl">Look at what kind of condition it is.</p>
+              <p class="tl">If it is a single test, look it up by name and run it.</p>
+              <p class="tl">If it is an "all" group (AND)...</p>
+              <p class="tl">...check each test inside it...</p>
+              <p class="tl">...and the moment one fails, the whole group is false (stop early).</p>
+              <p class="tl">If they all passed, the group is true.</p>
+              <p class="tl">If it is an "any" group (OR)...</p>
+              <p class="tl">...check each test inside it...</p>
+              <p class="tl">...and the moment one passes, the whole group is true (stop early).</p>
+              <p class="tl">If none passed, the group is false.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-xl); margin-top: var(--space-10)">The hot-reload button</h3>
+        <p>When an analyst changes a threshold, an operator hits a web button. The app re-reads the YAML and, if it is valid,
+          <span class="term" data-definition="An atomic swap replaces the whole rulebook in one indivisible step &mdash; the engine is always running either the old complete rulebook or the new one, never a half-applied mix.">swaps it in</span>
+          live. A broken file is rejected and the old rulebook keeps running.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE &middot; AdminController.java</span>
+            <pre><code>    <span class="code-keyword">public</span> ResponseEntity&lt;?&gt; <span class="code-function">reload</span>() {
+        <span class="code-keyword">try</span> {
+            RuleSet rs = loader.<span class="code-function">load</span>(resourceLoader.<span class="code-function">getResource</span>(rulesPath));
+            <span class="code-keyword">int</span> oldVersion = engine.<span class="code-function">active</span>() == <span class="code-keyword">null</span> ? -<span class="code-number">1</span> : engine.<span class="code-function">active</span>().<span class="code-function">version</span>();
+            engine.<span class="code-function">install</span>(rs);
+            log.<span class="code-function">info</span>(<span class="code-string">"Reload OK: {} &rarr; {} (rules: {})"</span>, oldVersion, rs.<span class="code-function">version</span>(), rs.<span class="code-function">rules</span>().<span class="code-function">size</span>());
+            <span class="code-keyword">return</span> ResponseEntity.<span class="code-function">ok</span>(Map.<span class="code-function">of</span>(
+                    <span class="code-string">"previousVersion"</span>, oldVersion,
+                    <span class="code-string">"currentVersion"</span>, rs.<span class="code-function">version</span>(),
+                    <span class="code-string">"ruleCount"</span>, rs.<span class="code-function">rules</span>().<span class="code-function">size</span>()
+            ));
+        } <span class="code-keyword">catch</span> (RuleValidationException e) {
+            reloadFailedCounter.<span class="code-function">increment</span>();
+            log.<span class="code-function">error</span>(<span class="code-string">"Reload REJECTED: {}"</span>, e.<span class="code-function">getMessage</span>());
+            ProblemDetail pd = ProblemDetail.<span class="code-function">forStatusAndDetail</span>(HttpStatus.UNPROCESSABLE_ENTITY, e.<span class="code-function">getMessage</span>());
+            pd.<span class="code-function">setProperty</span>(<span class="code-string">"errors"</span>, e.<span class="code-function">errors</span>());
+            pd.<span class="code-function">setProperty</span>(<span class="code-string">"activeVersion"</span>, engine.<span class="code-function">active</span>() == <span class="code-keyword">null</span> ? <span class="code-keyword">null</span> : engine.<span class="code-function">active</span>().<span class="code-function">version</span>());
+            <span class="code-keyword">return</span> ResponseEntity.<span class="code-function">status</span>(HttpStatus.UNPROCESSABLE_ENTITY).<span class="code-function">body</span>(pd);
+        }
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">An operator hits this web button to reload the rules.</p>
+              <p class="tl">Try to do it &mdash; but be ready to catch a problem.</p>
+              <p class="tl">Re-read the YAML rules file from disk.</p>
+              <p class="tl">Note which version is currently live, so we can report the change.</p>
+              <p class="tl">Swap the new rulebook in as the live one.</p>
+              <p class="tl">Log a friendly "Reload OK: old &rarr; new" with the rule count.</p>
+              <p class="tl">Report back the old version, new version, and how many rules.</p>
+              <p class="tl">But if the new file fails <span class="term" data-definition="Checking that a config file is well-formed and makes sense (correct shape, valid values) before trusting it. A schema is the rulebook for what a valid file looks like.">validation</span>...</p>
+              <p class="tl">...count the failure, and log "Reload REJECTED" with why.</p>
+              <p class="tl">Build a clear error &mdash; <span class="term" data-definition="An HTTP error code meaning the request was understood but the data inside it could not be processed &mdash; here, the new rulebook was readable but invalid.">422 Unprocessable Entity</span> &mdash; with the message.</p>
+              <p class="tl">Attach the exact list of problems found.</p>
+              <p class="tl">And note which version is still safely live (the old one).</p>
+              <p class="tl">Send the 422 back. Fraud detection was never switched off.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCREEN 6: Patterns recap + quiz ============ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Four ideas that make this safe</h2>
+        <p>Everything you just saw rests on four design choices. These are the patterns to ask your AI assistant for whenever behaviour might change.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">&#128221;</div>
+            <h4 class="pattern-title">Rules as data, not code</h4>
+            <p class="pattern-desc">The rules live in a versioned YAML file. Business experts change behaviour; engineers improve the machinery &mdash; independently.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">&#128214;</div>
+            <h4 class="pattern-title">A vocabulary of tests</h4>
+            <p class="pattern-desc">The registry is a fixed menu of reusable predicates. Rules pick from it by name &mdash; the same test powers many rules.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5)">&#9889;</div>
+            <h4 class="pattern-title">Atomic hot-swap</h4>
+            <p class="pattern-desc">Apply a new rulebook live, no restart. The engine always runs one complete rulebook &mdash; never a half-applied mix.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4)">&#128737;</div>
+            <h4 class="pattern-title">Validate before install</h4>
+            <p class="pattern-desc">A broken file is rejected with a 422 and a list of problems. The old, working rulebook keeps running. Typos never disable detection.</p>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-xl); margin-top: var(--space-12)">Check your understanding</h3>
+        <p>No memorising &mdash; each of these is a real decision you might face. Take a moment and think it through.</p>
+
+        <div class="quiz-container" id="quiz-module3">
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. The threshold lives in the YAML, and a predicate reads it at run time. Edit the value, hot-reload &mdash; no developer, no redeploy. This is the whole point of rules-as-data."
+               data-explanation-wrong="Not quite &mdash; remember that the threshold lives in the YAML file, not the code. Lowering 10,000 to 8,000 is a one-value edit plus a hot-reload. No code change and no redeploy means no developer is on the critical path.">
+            <h3 class="quiz-question">The fraud team wants the high-amount threshold lowered from 10,000 to 8,000 today. What is the safe path, and who is needed?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A developer edits the Java predicate, then the app is redeployed to production.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>An analyst edits the value in the YAML and hot-reloads &mdash; no developer or redeploy needed.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It is not possible to change a threshold without releasing a new version of the app.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-c"
+               data-explanation-right="Right. The reload validates the file first; a broken file fails validation and is rejected with a 422, while the previous good rulebook stays live. Detection is never silently switched off by a typo."
+               data-explanation-wrong="Think about validate-before-install. The engine checks the new file before swapping it in. A broken file is rejected with a 422 error and the old, working rulebook keeps running &mdash; so live detection is never disabled by a typo.">
+            <h3 class="quiz-question">Someone reloads a rulebook that has a typo in it. What happens to live fraud detection?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The broken rules load anyway, so some checks silently stop working.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Detection shuts off completely until someone fixes the file.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The reload is rejected with a 422 error and the previous good rulebook stays active.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-a"
+               data-explanation-right="Correct. The verdict is the strictest match (BLOCK beats REVIEW) and the score is the highest match (0.95), never a sum. Two matches do not add up &mdash; the engine keeps the max of each."
+               data-explanation-wrong="Remember: the engine keeps the strictest verdict and the highest score, and scores are never added together. BLOCK is stricter than REVIEW, and 0.95 is higher than 0.7 &mdash; so the answer is BLOCK at 0.95.">
+            <h3 class="quiz-question">Two rules both match: one says REVIEW with score 0.7, the other says BLOCK with score 0.95. What is the final verdict and score?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>BLOCK, score 0.95 &mdash; the strictest verdict and the highest score.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>REVIEW, score 1.65 &mdash; the two scores are added together.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>REVIEW, score 0.7 &mdash; whichever rule matched first wins.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly &mdash; this is the rules-as-data lesson applied. Make the weekly-changing thresholds configuration data so non-engineers can tweak them without a redeploy, and keep the machinery as code."
+               data-explanation-wrong="Think about who changes these values and how often. If marketing tweaks them weekly, a hardcoded constant means a developer and a redeploy every single time. Make them configuration data instead &mdash; the exact rules-as-data lesson from this module.">
+            <h3 class="quiz-question">You are steering an AI to build a feature whose thresholds marketing will tweak weekly. Should those thresholds be a code constant or configuration data &mdash; and why?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A code constant &mdash; it is simpler to just write the number directly in the code.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Configuration data &mdash; so non-engineers can change it without a redeploy.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It makes no difference &mdash; either way a developer has to be involved every week.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128073;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Coming up next: Never Lose a Decision</strong>
+            <p>The engine has decided. But how do we make sure that decision is never made twice and never lost? That VELOCITY_BURST rule you saw block early needs to <em>count</em> transactions fast &mdash; Module 4 shows how, along with idempotency and the outbox.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

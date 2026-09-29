@@ -1,0 +1,480 @@
+<section class="module" id="module-5" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">The AI Consultant &mdash; and Why It Is Never Allowed to Decide</h1>
+      <p class="module-subtitle">How to bolt an AI assistant onto a system that blocks people's money &mdash; without ever letting the AI make that call.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- SCREEN 1: The hook + GPS metaphor -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The most important question in this whole codebase</h2>
+        <p>Everyone wants to bolt AI onto everything. So here is the question that matters most: how do you add an AI assistant to a system that decides whether to block someone's money &mdash; <em>without ever letting the AI make that call?</em></p>
+
+        <p>Think of a car's built-in <span class="term" data-definition="A satellite navigation system that suggests driving routes. In this metaphor, it is the AI: it gives advice, but it never touches the controls.">GPS co-pilot</span>. The GPS suggests a route. But it can never touch the steering wheel or the brakes &mdash; <em>you</em> always drive. Even when it says confidently "turn here," the dashboard still shows "driver must confirm." And if the GPS loses signal, the car keeps driving exactly as before.</p>
+
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#128663;</div>
+            <div>
+              <strong>The driver = the rule engine</strong>
+              <p>The <span class="term" data-definition="A system that, given the same input, always produces exactly the same output by following fixed written rules. The opposite of probabilistic guessing.">deterministic</span> rule engine makes the real decision. It is the only thing with hands on the wheel.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#128225;</div>
+            <div>
+              <strong>The GPS = the AI advisor</strong>
+              <p>A local <span class="term" data-definition="A computer program trained on lots of text that can write human-sounding language and make probabilistic guesses. Also called an LLM (Large Language Model). It guesses, it does not know.">AI model</span> writes a short note <em>after</em> the decision, only to help a human reviewer. Advice only, never control.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128161;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why you should care</strong>
+            <p>This is <em>the</em> lesson for steering AI: keep the AI a helpful commentator, never the judge, in anything high-stakes. When you build with AI, you will learn to ask: where is the human in the loop, and what happens when the model is wrong or down?</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: The contract / interface -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">First, a promise: "any advisor must keep this shape"</h2>
+        <p>Before plugging in any AI, the code writes down a <span class="term" data-definition="A written promise that lists the methods something must provide, without saying how. Any class that signs the contract must keep it. Engineers call this an interface.">contract</span> &mdash; an <span class="term" data-definition="In Java, a list of method signatures with no bodies. It defines what a thing can do, not how. Different classes can fulfil the same interface in different ways.">interface</span>. It says: whoever the advisor is, it must answer one question and admit whether it is even real.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public</span> <span class="code-keyword">interface</span> <span class="code-function">AdvisoryService</span> {
+
+    <span class="code-function">AdvisoryResponse</span> <span class="code-function">adviseOn</span>(<span class="code-function">Decision</span> decision);
+
+    <span class="code-comment">/** Indicates whether a real advisor (e.g. Ollama) is wired up. */</span>
+    <span class="code-keyword">default</span> <span class="code-keyword">boolean</span> <span class="code-function">enabled</span>() { <span class="code-keyword">return</span> <span class="code-keyword">false</span>; }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A promise that any AI advisor must keep.</p>
+              <p class="tl">One method: hand it a finished decision, get back commentary. That is its only job.</p>
+              <p class="tl">A second question: "are you a real advisor?"</p>
+              <p class="tl">The default answer is "no." Off by default &mdash; you have to actively switch a real one on.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#129309;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why the contract comes first</strong>
+            <p>Because everything talks to this promise &mdash; not to "the AI" directly &mdash; the rest of the app never has to know whether AI is actually on. Swapping advisors becomes a one-line setting change. Engineers call this the <span class="term" data-definition="A design pattern where interchangeable behaviours all share one interface, so you can swap which one runs without changing the code that uses it.">strategy pattern</span>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: OFF vs ON side-by-side -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">One switch: AI OFF vs AI ON</h2>
+        <p>There are two advisors that keep the same promise. A single <span class="term" data-definition="A setting (often an environment variable or feature flag) that turns a behaviour on or off without changing code. Like a light switch for a feature.">setting</span> &mdash; <code>app.advisory.enabled</code> &mdash; decides which one the app loads. Nothing else changes.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">&#128280;</div>
+            <h4 class="pattern-title">OFF (the default)</h4>
+            <p class="pattern-desc">Loads the <strong>do-nothing stand-in</strong>. Asked for advice, it replies "unavailable." The whole app runs perfectly with no AI model installed at all.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">&#128293;</div>
+            <h4 class="pattern-title">ON</h4>
+            <p class="pattern-desc">Loads the <strong>real Ollama advisor</strong>. It calls a local model with a 2-second fuse, returns commentary &mdash; but still flags <code>humanReviewRequired = true</code>.</p>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-lg); margin-top: var(--space-8)">OFF: the safe do-nothing stand-in</h3>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">@Component</span>
+<span class="code-keyword">@ConditionalOnProperty</span>(prefix = <span class="code-string">"app.advisory"</span>, name = <span class="code-string">"enabled"</span>, havingValue = <span class="code-string">"false"</span>, matchIfMissing = <span class="code-keyword">true</span>)
+<span class="code-keyword">@ConditionalOnMissingBean</span>(value = <span class="code-function">AdvisoryService</span>.class, ignored = <span class="code-function">NoopAdvisoryService</span>.class)
+<span class="code-keyword">public</span> <span class="code-keyword">class</span> <span class="code-function">NoopAdvisoryService</span> <span class="code-keyword">implements</span> <span class="code-function">AdvisoryService</span> {
+
+    <span class="code-keyword">@Override</span>
+    <span class="code-keyword">public</span> <span class="code-function">AdvisoryResponse</span> <span class="code-function">adviseOn</span>(<span class="code-function">Decision</span> decision) {
+        <span class="code-keyword">return</span> <span class="code-function">AdvisoryResponse</span>.<span class="code-function">unavailable</span>();
+    }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Load this piece into the app...</p>
+              <p class="tl">...but only when the AI setting is "false" &mdash; or simply not set at all (that is what matchIfMissing means).</p>
+              <p class="tl">And only if no real advisor already grabbed the spot.</p>
+              <p class="tl">This is the empty stand-in &mdash; a <span class="term" data-definition="A design pattern: instead of leaving a missing thing as nothing (which crashes code), you plug in a harmless object that does nothing safely. It keeps the same shape so nothing breaks.">null object</span>.</p>
+              <p class="tl">Asked for advice...</p>
+              <p class="tl">...it just replies "unavailable." No AI, no crash, no hole in the system.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-lg); margin-top: var(--space-8)">ON: the real advisor, loaded only when switched on</h3>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">@Component</span>
+<span class="code-keyword">@ConditionalOnProperty</span>(prefix = <span class="code-string">"app.advisory"</span>, name = <span class="code-string">"enabled"</span>, havingValue = <span class="code-string">"true"</span>)
+<span class="code-keyword">public</span> <span class="code-keyword">class</span> <span class="code-function">OllamaAdvisoryService</span> <span class="code-keyword">implements</span> <span class="code-function">AdvisoryService</span> {</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Load this piece into the app...</p>
+              <p class="tl">...but only when the setting is exactly "true."</p>
+              <p class="tl">The two advisors are mutually exclusive: one setting flips which one the app uses, with no other code changing.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: The timeout fallback -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What happens when the AI is slow or broken?</h2>
+        <p>When the real advisor is on, it calls a local <span class="term" data-definition="Ollama is free software that runs AI models on your own computer instead of sending data to a cloud company. Local means private and offline-capable.">Ollama</span> model. But a <span class="term" data-definition="A small computer program (the model) that runs on your own machine rather than a remote server. Slower and dumber than cloud models, but private and under your control.">local model</span> can be slow, or down, or send back gibberish. The code refuses to let any of that touch a real decision.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        <span class="code-keyword">try</span> {
+            <span class="code-function">String</span> response = http.<span class="code-function">post</span>()
+                    .<span class="code-function">uri</span>(<span class="code-string">"/api/generate"</span>)
+                    .<span class="code-function">contentType</span>(<span class="code-function">MediaType</span>.APPLICATION_JSON)
+                    .<span class="code-function">body</span>(body)
+                    .<span class="code-function">retrieve</span>()
+                    .<span class="code-function">body</span>(<span class="code-function">String</span>.class);
+            <span class="code-keyword">return</span> <span class="code-function">parse</span>(response);
+        } <span class="code-keyword">catch</span> (<span class="code-function">RestClientException</span> e) {
+            log.<span class="code-function">warn</span>(<span class="code-string">"advisory: ollama call failed cause={}"</span>, e.<span class="code-function">toString</span>());
+            timeoutCounter.<span class="code-function">increment</span>();
+            <span class="code-keyword">return</span> <span class="code-function">AdvisoryResponse</span>.<span class="code-function">timedOut</span>();
+        }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Try to send the question to the local AI and wait for a reply...</p>
+              <p class="tl">...post the request to the model's address...</p>
+              <p class="tl">...with the question packaged up, then read whatever text comes back.</p>
+              <p class="tl">If a real answer arrives, turn it into structured commentary.</p>
+              <p class="tl">But if anything goes wrong &mdash; slow, broken, unreachable &mdash; do NOT crash.</p>
+              <p class="tl">Quietly note the failure in the logs.</p>
+              <p class="tl">Tick a counter (so a <span class="term" data-definition="A safety mechanism that watches for repeated failures and, after too many, stops trying for a while to protect the rest of the system. Named after the electrical breaker that trips to prevent a fire.">circuit breaker</span> can trip after too many failures).</p>
+              <p class="tl">Return a "timed out" answer. The decision the customer already got is never affected.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#9201;&#65039;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Graceful degradation</strong>
+            <p>A 2-second <span class="term" data-definition="A maximum wait time. If a call takes longer than the limit, the code stops waiting and moves on, so one slow part can never freeze the whole app.">timeout</span> plus a circuit breaker mean a slow or broken AI can never delay or break a real decision. The system gets weaker, not dead &mdash; engineers call this <span class="term" data-definition="Designing a system so that when a part fails, the whole thing keeps working with reduced features instead of crashing entirely.">graceful degradation</span>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: The always-true flag + the most important lesson + group chat -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Even a perfect answer still demands a human</h2>
+        <p>Here is the heart of it. When the AI replies cleanly, the code builds a success response &mdash; and the very last value is hard-coded to <code>true</code>. That is the <span class="term" data-definition="A built-in requirement that a person must look at the result before it is acted on. The AI can never remove it. Engineers call this human-in-the-loop.">human-review-required</span> flag.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>            okCounter.<span class="code-function">increment</span>();
+            <span class="code-keyword">return</span> <span class="code-keyword">new</span> <span class="code-function">AdvisoryResponse</span>(<span class="code-function">AdvisoryStatus</span>.OK, summary, concerns, confidence, <span class="code-keyword">true</span>);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Count this as a successful AI call.</p>
+              <p class="tl">Build the reply: status OK, a summary, any concerns, a confidence score &mdash; and that final <code>true</code> is "a human must still review this." Hard-coded true even on a perfect answer. The AI is never allowed to be a green light.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>And every <em>failure</em> shape says the same thing. Timed out, unavailable, gibberish &mdash; all three carry empty content, zero confidence, and <code>true</code> for "a human must check."</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    <span class="code-keyword">public</span> <span class="code-keyword">static</span> <span class="code-function">AdvisoryResponse</span> <span class="code-function">timedOut</span>() {
+        <span class="code-keyword">return</span> <span class="code-keyword">new</span> <span class="code-function">AdvisoryResponse</span>(<span class="code-function">AdvisoryStatus</span>.TIMED_OUT, <span class="code-keyword">null</span>, <span class="code-function">List</span>.<span class="code-function">of</span>(), <span class="code-number">0.0</span>, <span class="code-keyword">true</span>);
+    }
+
+    <span class="code-keyword">public</span> <span class="code-keyword">static</span> <span class="code-function">AdvisoryResponse</span> <span class="code-function">unavailable</span>() {
+        <span class="code-keyword">return</span> <span class="code-keyword">new</span> <span class="code-function">AdvisoryResponse</span>(<span class="code-function">AdvisoryStatus</span>.UNAVAILABLE, <span class="code-keyword">null</span>, <span class="code-function">List</span>.<span class="code-function">of</span>(), <span class="code-number">0.0</span>, <span class="code-keyword">true</span>);
+    }
+
+    <span class="code-keyword">public</span> <span class="code-keyword">static</span> <span class="code-function">AdvisoryResponse</span> <span class="code-function">malformed</span>() {
+        <span class="code-keyword">return</span> <span class="code-keyword">new</span> <span class="code-function">AdvisoryResponse</span>(<span class="code-function">AdvisoryStatus</span>.MALFORMED, <span class="code-keyword">null</span>, <span class="code-function">List</span>.<span class="code-function">of</span>(), <span class="code-number">0.0</span>, <span class="code-keyword">true</span>);
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The "timed out" reply: no content, zero confidence...</p>
+              <p class="tl">...and <code>true</code> &mdash; a human must review.</p>
+              <p class="tl">The "unavailable" reply (the AI is off or down)...</p>
+              <p class="tl">...same: empty, zero confidence, <code>true</code>.</p>
+              <p class="tl">The "malformed" reply (the AI sent <span class="term" data-definition="When an AI confidently produces output that is wrong, made up, or nonsensical. Here, gibberish the code cannot understand.">gibberish</span>)...</p>
+              <p class="tl">...also <code>true</code>. No matter how the AI fails, the answer is "don't trust me, get a person."</p>
+            </div>
+          </div>
+        </div>
+
+        <p>The boundary is even told to the AI directly &mdash; the opening lines of its <span class="term" data-definition="The instructions given to an AI before the real question, setting its role and rules. The system prompt is the AI's job description for that conversation.">system prompt</span>:</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">System: You are a fraud-analyst assistant. You DO NOT make decisions.</span>
+<span class="code-comment">The deterministic rule engine has already</span>
+<span class="code-comment">produced the verdict - you produce a short structured commentary to help</span>
+<span class="code-comment">a human reviewer.</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The literal first words handed to the AI: you are a helper, you do NOT make decisions.</p>
+              <p class="tl">The verdict is already final.</p>
+              <p class="tl">Your only job is a short note for a human reviewer.</p>
+              <p class="tl">The boundary is told to the AI directly &mdash; not just enforced in code.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#11088;</div>
+          <div class="callout-content">
+            <strong class="callout-title">The most important lesson in this course</strong>
+            <p>In a high-stakes system, the AI <strong>advises; it never decides</strong>. Make that boundary structural &mdash; an off-switch, a timeout, and a human-review flag the model can never set &mdash; not just a hopeful instruction in a prompt. The GPS suggests the turn; you still hold the wheel.</p>
+          </div>
+        </div>
+
+        <h3 class="screen-heading" style="font-size: var(--text-lg); margin-top: var(--space-10)">Watch one advisory request play out</h3>
+        <p>Notice that before asking the AI anything, the desk strips out the customer name and amount &mdash; <span class="term" data-definition="Removing personally identifying details (names, account numbers, amounts) before sharing data, so the AI never sees who the customer is. PII stands for Personally Identifiable Information.">PII redaction</span>. And watch the second run, where the model is down.</p>
+
+        <div class="chat-window" id="chat-module5">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="reviewer" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">R</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">Reviewer Tool</span>
+                <p>I already have decision #X. Any commentary?</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="desk" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">D</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Advisory Desk</span>
+                <p>Let me ask the AI &mdash; but first I strip out the customer name and amount.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="ai" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">AI</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">AI Model (Ollama)</span>
+                <p>Looks like a high-amount-on-young-account pattern; medium confidence.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="stamp" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">P</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">Policy Stamp</span>
+                <p>Noted. Stamping this: HUMAN REVIEW STILL REQUIRED.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="desk" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">D</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Advisory Desk</span>
+                <p>Here is the note. The verdict itself does not change.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="ai" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">AI</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">AI Model (Ollama)</span>
+                <p>&hellip;(no response, model is down)&hellip;</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="6" data-sender="desk" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">D</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Advisory Desk</span>
+                <p>Timed out. Returning UNAVAILABLE. The decision stands untouched.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-typing" style="display:none">
+            <div class="chat-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: Patterns + quiz -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Four patterns that keep AI on a leash</h2>
+        <p>None of this is luck. Four well-known engineering patterns combine so the AI <em>structurally cannot</em> become the decider.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">&#128256;</div>
+            <h4 class="pattern-title">Strategy pattern</h4>
+            <p class="pattern-desc">One switch swaps the advisor. Off-stand-in or real AI &mdash; the rest of the app neither knows nor cares which is loaded.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">&#128683;</div>
+            <h4 class="pattern-title">Null object</h4>
+            <p class="pattern-desc">A safe do-nothing stand-in fills the gap when AI is off, so the app never has a hole to crash through.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4)">&#9889;</div>
+            <h4 class="pattern-title">Graceful degradation</h4>
+            <p class="pattern-desc">A timeout plus a circuit breaker mean a slow or broken AI weakens the help, never the decision.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5)">&#128737;&#65039;</div>
+            <h4 class="pattern-title">Safety flag by policy</h4>
+            <p class="pattern-desc">"A human must review" is decided by policy, hard-coded into every reply &mdash; never by the model.</p>
+          </div>
+        </div>
+
+        <h2 class="screen-heading" style="margin-top: var(--space-12)">Test your judgment</h2>
+        <p>These are decisions you will actually face when someone asks you to "add AI" to something serious.</p>
+
+        <div class="quiz-container" id="quiz-module5">
+
+          <div class="quiz-question-block"
+               data-correct="opt-no"
+               data-explanation-right="Exactly. The boundary here is structural, not a number. 95% accurate still means roughly 1 in 20 wrong &mdash; on money decisions that is unacceptable, and the design makes the AI advisory-only by construction so a human always reviews. Confidence in a guess is not authority to decide."
+               data-explanation-wrong="Think about what 95% really means on money decisions: about 1 in 20 wrong. This design makes the AI advisory-only on purpose &mdash; the human-review flag is hard-coded true even on a perfect answer. Accuracy is not the same as being allowed to decide.">
+            <h3 class="quiz-question">A stakeholder says: "the AI is 95% accurate &mdash; let it auto-approve the easy ones to save reviewer time." Based on this design, what is the principled answer?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-yes" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Yes &mdash; 95% is high enough; auto-approve the easy cases.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-no" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>No &mdash; the AI is advisory only; a human must review. The boundary is structural, not a percentage.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-maybe" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Only if we raise the timeout so the AI has more time to be sure.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-nothing"
+               data-explanation-right="Right. The rule engine already made and stored the decision; the advisory call is a separate, time-limited step that runs afterward. A frozen model just hits the 2-second timeout and returns UNAVAILABLE &mdash; the customer's actual transaction is untouched."
+               data-explanation-wrong="Remember the order of events: the deterministic engine decides first and stores it. The AI is asked only afterward, on a separate 2-second-limited call. A frozen model cannot reach back and delay a decision that was already made and returned.">
+            <h3 class="quiz-question">The Ollama model freezes and takes 30 seconds to respond. What does the customer experience for their actual transaction?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-wait" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Their transaction hangs for 30 seconds until the AI replies.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-error" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The transaction fails with an error because the AI is down.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-nothing" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Nothing &mdash; the engine already decided; advisory is a separate, time-limited call.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-runs"
+               data-explanation-right="Correct. matchIfMissing = true means the do-nothing stand-in is the default when the setting is absent. The app loads the Noop advisor, every advice request returns UNAVAILABLE, and everything else runs normally. A missing AI is a non-event by design."
+               data-explanation-wrong="Look back at the OFF advisor: matchIfMissing = true. That single word means 'if the setting is not there, behave as if it were false.' So instead of a crash, the harmless stand-in loads and the app runs fine without any AI.">
+            <h3 class="quiz-question">You deploy with the AI setting absent entirely &mdash; nobody set <code>app.advisory.enabled</code> at all. Does the app crash, or run?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-crash" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It crashes &mdash; a required setting is missing.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-runs" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It runs &mdash; the do-nothing stand-in is the default via matchIfMissing.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-half" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It starts but blocks every transaction until the setting is added.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-three"
+               data-explanation-right="That is the playbook from this whole module. An opt-in switch (so AI is off by default and you choose to turn it on), a timeout (so a slow model can never hang the request), and a human-in-the-loop flag the model cannot override (so it advises, never decides). The GPS suggests; you still drive."
+               data-explanation-wrong="Tempting, but these miss the structural guardrails. Higher accuracy or a bigger model still leaves the AI able to hang the request or quietly become the decider. The three that actually constrain it: an opt-in switch, a timeout, and a human-review flag the model cannot override.">
+            <h3 class="quiz-question">You are steering an AI to add "AI-assisted approvals" to a payments app. Which three guardrails would you insist on first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-accuracy" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A bigger model, more training data, and a higher accuracy target.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-three" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>An opt-in switch, a timeout so it cannot hang the request, and a human-in-the-loop flag the model cannot override.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-speed" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Faster hardware, a slick dashboard, and automatic approval for low amounts.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128279;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Where this leads next</strong>
+            <p>Decisions are made, stored reliably, and now have optional AI commentary on top &mdash; with the AI safely on a leash. Next: "Attack Your Own Engine," the red-team simulator that hammers the engine to find what it misses &mdash; and even uses a local AI to <em>invent</em> new attacks, again non-authoritatively.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

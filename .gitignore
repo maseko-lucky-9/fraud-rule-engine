@@ -61,3 +61,15 @@ simulator/**/*.pyc
 
 ### Claude / agentic scratch ###
 .claude/
+
+### Local-only docs (kept on disk, not tracked) ###
+/docs/interview/
+/docs/runbooks/
+
+### Playwright session logs ###
+.playwright-mcp/
+
+### Course builder artifacts (binary + db) ###
+fraud-engine-course/*.db
+fraud-engine-course/*.rvf
+fraud-engine-course/*.rvf.lock

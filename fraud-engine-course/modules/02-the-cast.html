@@ -1,0 +1,488 @@
+<section class="module" id="module-2" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">Meet the Cast</h1>
+      <p class="module-subtitle">Walk the building and meet every department — and find out why this is one program instead of a dozen.</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- SCREEN 1: The org-chart metaphor + opening hook -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">One building, many departments</h2>
+        <p>In Module 1 your transaction was passed from hand to hand. Each pair of hands belongs to a different department. Let us walk the building and meet them.</p>
+        <p>Think of the whole system as a <strong>company under one roof</strong>. Every folder of code is a department with one clear job — and they all sit in the same building.</p>
+
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#129534;</div>
+            <div>
+              <strong>Reception Desk &mdash; <span class="term" data-definition="A package (also called a module) is a labelled folder of related code. It groups files that share one job, the way a department groups people who share one job.">api</span> package</strong>
+              <p>Greets every incoming request and checks it is allowed in.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#127981;</div>
+            <div>
+              <strong>Assembly Line &mdash; ingest package</strong>
+              <p>The one and only place where anything gets written down.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-3)">&#9878;&#65039;</div>
+            <div>
+              <strong>Decision Committee &mdash; engine package</strong>
+              <p>Reads the rulebook and reaches a verdict: allow, review, or block.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-4)">&#128193;</div>
+            <div>
+              <strong>Filing Cabinet &mdash; persistence package</strong>
+              <p>Stores everything safely so it can be found again later.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-5)">&#128231;</div>
+            <div>
+              <strong>Mail Room &mdash; publish package</strong>
+              <p>Announces each decision to other systems once it is final.</p>
+            </div>
+          </div>
+          <div class="icon-row animate-in">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#128221;</div>
+            <div>
+              <strong>Compliance Logbook &mdash; audit package</strong>
+              <p>Keeps a permanent, un-erasable record for regulators.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#128161;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Separation of concerns</strong>
+            <p>Splitting work into focused departments is one of the most important ideas in software. It is what lets you change one part without breaking the rest &mdash; and it is exactly what you are pointing at when you tell an AI assistant &ldquo;put this logic in X, not Y.&rdquo;</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: Visual file tree of the whole building -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The floor plan</h2>
+        <p>Here is the actual layout of folders inside the project. Each folder is one department, with a one-line job description.</p>
+
+        <div class="file-tree">
+          <div class="ft-folder open">
+            <span class="ft-name">com/capitec/fraud/</span>
+            <span class="ft-desc">The whole building &mdash; everything lives in here</span>
+            <div class="ft-children">
+              <div class="ft-folder">
+                <span class="ft-name">api/</span>
+                <span class="ft-desc">Reception Desk &mdash; greets incoming requests</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">domain/</span>
+                <span class="ft-desc">The shared vocabulary everyone agrees on (Transaction, Decision)</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">engine/</span>
+                <span class="ft-desc">Decision Committee &mdash; reaches the verdict</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">ingest/</span>
+                <span class="ft-desc">Assembly Line &mdash; the ONLY place that writes data</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">persistence/</span>
+                <span class="ft-desc">Filing Cabinet &mdash; stores everything safely</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">publish/</span>
+                <span class="ft-desc">Mail Room &mdash; announces final decisions</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">audit/</span>
+                <span class="ft-desc">Compliance Logbook &mdash; the un-erasable trail</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">advisory/</span>
+                <span class="ft-desc">The optional advisor &mdash; extra opinions, never the final say</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">security/</span>
+                <span class="ft-desc">Door guard &mdash; checks who is allowed in</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">ratelimit/</span>
+                <span class="ft-desc">Turnstile &mdash; caps how many requests get through</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">idempotency/</span>
+                <span class="ft-desc">Duplicate-catcher &mdash; ignores the same request sent twice</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">observability/</span>
+                <span class="ft-desc">Control room &mdash; watches the building&rsquo;s health</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">config/</span>
+                <span class="ft-desc">Plumbing &mdash; wiring and settings</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">query/</span>
+                <span class="ft-desc">Read helpers &mdash; looking things up without changing them</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p>Notice there is no &ldquo;everything&rdquo; folder. Each department has one job, and the walls between them are deliberate.</p>
+      </section>
+
+      <!-- SCREEN 3: Group chat HERO — one transaction moving through the building -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Listen in: a transaction moves through</h2>
+        <p>Watch the departments talk to each other as one card payment travels the building. Tap <strong>Next Message</strong> to follow the conversation.</p>
+
+        <div class="chat-window" id="chat-module2">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="frontdesk" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">FD</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Front Desk (api)</span>
+                <p>New transaction for ACC-NEW-12, 12,500 ZAR. Token checks out.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="brain" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">BR</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">The Brain (ingest)</span>
+                <p>On it. Saving the raw event, then I will get a verdict.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="judge" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">JG</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">The Judge (engine)</span>
+                <p>Running the rules&hellip; HIGH_AMOUNT_NEW_ACCOUNT fired. Verdict: REVIEW, score 0.85.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="brain" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">BR</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">The Brain (ingest)</span>
+                <p>Saving the verdict and the reasons &mdash; all in one go, or not at all.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="logbook" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">LB</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">Logbook (audit)</span>
+                <p>Logged. This can never be erased.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="mailroom" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">MR</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Mail Room (publish)</span>
+                <p>I will announce the decision to downstream services when it is safely committed.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-typing" id="chat-module2-typing" style="display:none">
+            <div class="chat-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: Code <-> English — the shared vocabulary (Transaction + Decision) -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The shared vocabulary</h2>
+        <p>Every department needs to agree on what a payment <em>is</em> and what a verdict <em>is</em>. That agreement lives in the <span class="term" data-definition="A domain model is the set of plain-data shapes that name the real-world things a system cares about — here, a payment and a verdict. It is the team&rsquo;s shared vocabulary.">domain model</span>: simple, plain-data definitions with no machinery bolted on.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public</span> <span class="code-keyword">record</span> <span class="code-function">Transaction</span>(
+        UUID txId,
+        String accountId,
+        BigDecimal amount,
+        String currency,
+        String mcc,
+        Channel channel,
+        String country,
+        String ipCountry,
+        String deviceId,
+        String merchantId,
+        <span class="code-keyword">int</span> accountAgeDays,
+        Instant timestamp
+) {
+    <span class="code-keyword">public</span> <span class="code-keyword">enum</span> <span class="code-function">Channel</span> { WEB, MOBILE, POS, ATM, API }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A Transaction is just the facts about one card payment.</p>
+              <p class="tl">It has an id, the account, and the amount and currency.</p>
+              <p class="tl">It records where it happened &mdash; the country versus the country the internet connection came from.</p>
+              <p class="tl">Plus the device, the merchant, how old the account is, and the time.</p>
+              <p class="tl">It even lists the ways a payment can arrive: web, mobile, card machine, ATM, or another program.</p>
+              <p class="tl">Plain data, nothing technical bolted on &mdash; so its business meaning stays obvious.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>This shape is a <span class="term" data-definition="A record is a Java shortcut for a small, read-once data holder. You declare the fields and Java generates the boring code — it is for plain data that does not change after it is created.">record</span> &mdash; a tidy container for facts. The <span class="term" data-definition="An enum is a fixed menu of named choices. A payment&rsquo;s channel can only ever be one of the listed options — never a typo or a surprise value.">enum</span> at the bottom is a fixed menu: a payment can only ever arrive one of those five ways.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public</span> <span class="code-keyword">record</span> <span class="code-function">Decision</span>(
+        UUID decisionId,
+        UUID txId,
+        String accountId,
+        DecisionStatus status,
+        <span class="code-keyword">double</span> score,
+        <span class="code-keyword">int</span> ruleSetVersion,
+        List&lt;RuleResult&gt; matchedRules,
+        Instant evaluatedAt
+) {
+    <span class="code-keyword">public</span> <span class="code-function">Decision</span> {
+        <span class="code-keyword">if</span> (score &lt; <span class="code-number">0.0</span> || score &gt; <span class="code-number">1.0</span>) {
+            <span class="code-keyword">throw</span> <span class="code-keyword">new</span> <span class="code-function">IllegalArgumentException</span>(<span class="code-string">"score must be in [0,1], got "</span> + score);
+        }
+        matchedRules = List.<span class="code-function">copyOf</span>(matchedRules);
+    }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">A Decision is the verdict and the full story behind it.</p>
+              <p class="tl">It says which transaction, the status, and a 0-to-1 score of how risky it looked.</p>
+              <p class="tl">It records which version of the rulebook was used.</p>
+              <p class="tl">And the exact list of rules that fired, plus when it was evaluated.</p>
+              <p class="tl">It refuses to even exist if the score is a nonsense number.</p>
+              <p class="tl">It copies the matched-rules list so nobody can secretly rewrite the explanation later.</p>
+              <p class="tl">This is the record a regulator relies on.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>And the verdict itself is one of exactly three words &mdash; an <span class="term" data-definition="An enum is a fixed menu of named choices. Here it guarantees a verdict is always one of three known words, never anything else.">enum</span> again. When several rules fire, the strictest wins: BLOCK beats REVIEW beats APPROVE.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">public</span> <span class="code-keyword">enum</span> <span class="code-function">DecisionStatus</span> {
+    APPROVE,
+    REVIEW,
+    BLOCK
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Every transaction ends as exactly one of three verdicts.</p>
+              <p class="tl">Let it through, or pause it for a human, or stop it dead.</p>
+              <p class="tl">There is no fourth option &mdash; nothing falls through the cracks.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">&#128206;</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why no names or card numbers?</strong>
+            <p>Notice the Transaction holds an account <em>id</em> and a device <em>id</em>, not a person&rsquo;s name. Keeping <span class="term" data-definition="PII stands for Personally Identifiable Information — data that can identify a real person, like a name, ID number, or card number. Systems try to handle as little of it as possible.">PII</span> out of the core data is deliberate: less sensitive information flowing around means less that can leak.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: The big architectural question — one program or many? -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Why one program, not a dozen?</h2>
+        <p>All these departments could have been built as separate mini-programs that phone each other over the network. Instead they share one building. Why?</p>
+
+        <p>The whole system has a single &ldquo;on&rdquo; switch. One method boots every department at once &mdash; that is what makes it a <span class="term" data-definition="A monolith is a system built and shipped as one single program, even if it has many internal parts. The opposite is splitting it into many separate services that run apart.">monolith</span>.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-property">@SpringBootApplication</span>
+<span class="code-keyword">public</span> <span class="code-keyword">class</span> <span class="code-function">FraudRuleEngineApplication</span> {
+
+    <span class="code-keyword">public</span> <span class="code-keyword">static</span> <span class="code-keyword">void</span> <span class="code-function">main</span>(String[] args) {
+        SpringApplication.<span class="code-function">run</span>(FraudRuleEngineApplication.class, args);
+    }
+
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">The line on top tells the framework: this is the whole app, wire it all up.</p>
+              <p class="tl">This tiny file is the single &ldquo;on&rdquo; switch for the entire system.</p>
+              <p class="tl">One method boots every department at once.</p>
+              <p class="tl">That single starting point is exactly what makes this a monolith &mdash; one program, not many separate services.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>The trick is that the walls between departments are still real &mdash; they are just enforced <em>inside</em> one app. Engineers call this a <span class="term" data-definition="A modular monolith is one deployable program whose internals are split into strictly-walled modules. You get clean separation now, with the option to break it into separate services later.">modular monolith</span>. Here is the trade-off the team weighed in their decision record (<span class="term" data-definition="An ADR (Architecture Decision Record) is a short written note capturing a big technical choice — the problem, the options, the decision, and the consequences — so future readers know why.">ADR</span>-0002):</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-success)">
+            <div class="pattern-icon" style="background: var(--color-success)">&#127970;</div>
+            <h4 class="pattern-title">Modular Monolith</h4>
+            <p class="pattern-desc">
+              &#9989; One app, one <span class="term" data-definition="To deploy means to ship a version of the software to the place where it actually runs and serves real users.">deploy</span><br>
+              &#9989; One all-or-nothing save &mdash; verdict and reasons land together or not at all<br>
+              &#9989; One clean <span class="term" data-definition="An audit trail is a complete, time-ordered record of what happened and when — the receipts a regulator or investigator can rely on.">audit trail</span><br>
+              &#9989; Walls enforced inside, with the option to split later
+            </p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-text-muted)">
+            <div class="pattern-icon" style="background: var(--color-text-muted)">&#127759;</div>
+            <h4 class="pattern-title">Microservices</h4>
+            <p class="pattern-desc">
+              &#9888;&#65039; Many separate services to run and watch<br>
+              &#9888;&#65039; Network calls between them &mdash; slower, can fail mid-flight<br>
+              &#9888;&#65039; <span class="term" data-definition="Eventual consistency means different parts of a system briefly disagree, then catch up. Convenient at scale, awkward when you need one exact answer right now.">Eventual consistency</span> &mdash; parts can briefly disagree<br>
+              &#9888;&#65039; Much harder to keep one clean audit trail
+            </p>
+          </div>
+        </div>
+
+        <p>A bank wants one thing to <span class="term" data-definition="A microservice is one small, independently-running program that does a single job and talks to others over the network. A microservices system is many of them working together.">microservices</span> can offer scale, but a fraud bank wanted correctness and compliance first &mdash; so it chose one program now, with clean walls so it can split later if it ever needs to.</p>
+      </section>
+
+      <!-- SCREEN 6: Drag-and-drop + Quiz -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Test your map</h2>
+        <p>Drag each department onto the job it owns. There is exactly one right home for each.</p>
+
+        <div class="dnd-container" id="dnd-module2">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="ingest">ingest</div>
+            <div class="dnd-chip" draggable="true" data-answer="audit">audit</div>
+            <div class="dnd-chip" draggable="true" data-answer="engine">engine</div>
+            <div class="dnd-chip" draggable="true" data-answer="ratelimit">ratelimit</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="ingest">
+              <p class="dnd-zone-label">The only place that writes to the database</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="audit">
+              <p class="dnd-zone-label">Keeps an un-erasable trail for regulators</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="engine">
+              <p class="dnd-zone-label">Decides allow, review, or block</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="ratelimit">
+              <p class="dnd-zone-label">Caps requests to 100 per minute</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-module2')">Check Matches</button>
+          <button class="btn" onclick="resetDnD('dnd-module2')">Reset</button>
+        </div>
+
+        <h3 class="screen-heading" style="margin-top: var(--space-12)">Think it through</h3>
+
+        <div class="quiz-container" id="quiz-module2">
+          <div class="quiz-question-block"
+               data-correct="opt-b"
+               data-explanation-right="Exactly. The system has a single-writer rule: ingest (the Assembly Line) is the only department allowed to write data. Any new way of writing must go through it, so the all-or-nothing save and the audit trail stay intact."
+               data-explanation-wrong="Not quite. Remember the single-writer rule: only one department is ever allowed to write data. The Reception Desk just greets requests, and the Decision Committee only reads the rulebook to reach a verdict &mdash; neither of them writes.">
+            <h3 class="quiz-question">You want to add a brand-new way to write data into the system. Based on the single-writer rule, which department must that go through?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>api &mdash; the Reception Desk, since it greets every request first</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>ingest &mdash; the Assembly Line, the only department that writes</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>engine &mdash; the Decision Committee, since it produces the verdict</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-c"
+               data-explanation-right="Right. With one program you get one all-or-nothing save and one clean audit trail. The verdict and its reasons land together, and there is a single trustworthy history &mdash; correctness and compliance get much simpler. That is the heart of ADR-0002."
+               data-explanation-wrong="That is a real benefit of one style or the other, but it is not the deciding factor here. For a fraud bank the winning reasons were the all-or-nothing save and a single clean audit trail &mdash; correctness and compliance over everything else.">
+            <h3 class="quiz-question">Why might a bank choose one program (a monolith) over many separate services for this engine?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>One program is always faster than any system made of separate services</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Monoliths are the only way to use a framework like Spring Boot</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>One all-or-nothing save plus one clean audit trail &mdash; correctness and compliance are simpler</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="opt-a"
+               data-explanation-right="Spot on. The audit package is the Compliance Logbook &mdash; the permanent, un-erasable record of every decision. That is precisely what a regulator asking for unchangeable history needs."
+               data-explanation-wrong="Close, but think about which department exists specifically to keep a permanent, un-erasable history. The Filing Cabinet stores current data that can change, and the Mail Room only announces decisions &mdash; the un-erasable trail lives in audit.">
+            <h3 class="quiz-question">A regulator asks: &ldquo;Show me the unchangeable history of every decision you have ever made.&rdquo; Which department do you point them to?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>audit &mdash; the Compliance Logbook, an un-erasable trail</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>persistence &mdash; the Filing Cabinet, where current data is stored</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>publish &mdash; the Mail Room, which announces decisions</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module2')">Try Again</button>
+        </div>
+
+        <p style="margin-top: var(--space-10)">You now have the map of the building. Next we walk into the Decision Committee (the engine) and uncover its killer trick: the fraud rules are editable data, not code.</p>
+      </section>
+
+    </div>
+  </div>
+</section>
